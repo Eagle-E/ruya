@@ -1,0 +1,6 @@
+/*
+    Contains version information defined in the CMakeLists file.
+*/
+
+#define RUYA_VERSION_MAJOR @Ruya_VERSION_MAJOR@
+#define RUYA_VERSION_MINOR @Ruya_VERSION_MINOR@
