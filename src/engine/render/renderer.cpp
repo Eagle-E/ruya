@@ -229,7 +229,6 @@ void ruya::Renderer::draw_mesh(const shared_ptr<Mesh>& mesh)
 	glBindVertexArray(mMeshVaoMap[mesh]);
 	glDrawElements(GL_TRIANGLES, numIndexes, GL_UNSIGNED_INT, 0);
 	error = glGetError();
-	int a = 0;
 }
 
 /*
@@ -265,7 +264,6 @@ GLuint ruya::Renderer::buffer_mesh(const Mesh& mesh)
 	
 
 	// specify vertex attributes, how the data in the VBO should be evaluated
-	// UPDATED according to the concatenated data format
 	glVertexAttribPointer(INDEX_VERTEX_ATTRIB, 3, GL_FLOAT, GL_FALSE, 0, (void*)0); // loc data
 	glEnableVertexAttribArray(INDEX_VERTEX_ATTRIB);
 	glVertexAttribPointer(INDEX_NORMAL_ATTRIB, 3, GL_FLOAT, GL_FALSE, 0, (void*)(sizeVert)); // normal data
@@ -357,7 +355,7 @@ GLuint ruya::Renderer::TextureSlotManager::free_slot()
 
 /*
 * Moves given slot up one position in the priority list.
-* (this is done when an already-binded texture is being rendered again)
+* (this is done when an already-bound texture is being rendered again)
 */
 void ruya::Renderer::TextureSlotManager::increment_priority(list<GLuint>::iterator& slotIt)
 {

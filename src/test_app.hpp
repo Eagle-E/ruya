@@ -110,7 +110,7 @@ namespace ruya
             Texture::print_max_texture_slots_info();
 
 			fs::path resDir {baseDir / "resources"};
-			fs::path texPathWoodColor {resDir / "asphalt_1k" / "asphalt_1k_color.png"};
+			fs::path texPathWoodColor {resDir / "asphalt_1k" / "asphalt010_1k_color.png"};
 
 			vector< shared_ptr<Texture>> textures;
 			textures.push_back(std::make_shared<Texture>(texPathWoodColor.c_str()));
@@ -120,95 +120,25 @@ namespace ruya
 			// textures.push_back(std::make_shared<Texture>("resources/Fabric004_1K-PNG/Fabric004_1K_Color.png"));
 			std::cout << "Init textures" << std::endl;
 
-            vector<Object*> objects;
-            int radius = 2; // radius of grid, so grid will have 2r+1 cols and rows
-            float d = 7.5f;
-            for (float i = -radius; i <= radius; i++)
-            {
-                for (float j = -radius; j <= radius; j++)
-                {
-                    if (false)
-                    {
-                        for (float k = -radius; k <= radius; k++)
-                        {
-                            //Object* newObjptr = nullptr;
-                            //if ( (int)(i+j+k) % 2 == 0)
-                            //	newObjptr = new Cube();
-                            //else 
-                            //	newObjptr = new Icosahedron();
-
-							Object* newObjptr = new Icosphere(i + radius);
-							float g = (i + radius) / (2 * radius) * 0.8 + 0.1; // map i and j from [-r, r] to [0.1, 0.8]
-							float b = (j + radius) / (2 * radius) * 0.8 + 0.1;
-							float r = (k + radius) / (2 * radius) * 0.8 + 0.1;
-							//float r = (b + g) / 2.0f;
-							newObjptr->set_color(vec3(r, g, b));
-							newObjptr->set_position(vec3(d * i, d * j, d * k));
-							newObjptr->set_scale(3.0f);
-							newObjptr->material().ambient = vec3(1.0f);
-							newObjptr->material().diffuse = vec3(1.0f);
-							newObjptr->material().specular = vec3(1.0f);
-							newObjptr->material().shininess = 1.0f;
-							// newCube.set_texture(textures[i % textures.size()]);
-							newObjptr->set_texture(textures[0]);
-							objects.push_back(newObjptr);
-							scene.add_object(newObjptr);
-						}
-					}
-					else
-					{
-						Object* newObjptr = new Icosphere(i + radius);
-						float g = (i + radius) / (2 * radius) * 0.8 + 0.1; // map i and j from [-r, r] to [0.1, 0.8]
-						float b = (j + radius) / (2 * radius) * 0.8 + 0.1;
-						//float r = (k + radius) / (2 * radius) * 0.8 + 0.1;
-						float r = (b + g) / 2.0f;
-						newObjptr->set_color(vec3(r, g, b));
-						newObjptr->set_position(vec3(d * i, d * j, -5.0f));
-						newObjptr->set_scale(3.0f);
-						objects.push_back(newObjptr);
-						scene.add_object(newObjptr);
-					}
-				}
-			}
-
             // add spheres in a line
-            Timer timer;
-            printf("Old algo:\n");
             for (size_t i = 0; i <= 5; i++)
             {
-                timer.start();
-                Icosphere* sphere = new Icosphere(i);
-                timer.stop();
-                sphere->set_position((i-3.0f) * 2.5f, 2.5f, -1.0f);
-                scene.add_object(sphere);
+                Cube* cube = new Cube();
+                cube->set_texture(textures[0]);
 
-                printf("sphere level %zd = %zd vertices, %zd faces (%f s)\n", i, sphere->mesh()->vertices.size(), sphere->mesh()->faces.size(), timer.elapsed_time_s());
+                cube->set_position((i-3.0f) * 2.5f, 2.5f, -1.0f);
+                scene.add_object(cube);
             }
-    
-            /*
-            for (int i = 0; i <= 5; i++)
-            {
-                for (int j = 0; j < 5; j++)
-                {
-                    Icosphere* sphere = new Icosphere(i);
-                    sphere->set_position((i - 3.0f) * 2.5f, 2.5f + j * 2.5f, -1.0f);
-                    scene.add_object(sphere);
-                }
-            }
-            */
-            
 
             Cube ico;
             Cube* newCubeptr = new Cube();
             Cube* floor = new Cube();
-            Icosahedron* newIco= new Icosahedron();
 
             newCubeptr->set_position(3.0f, -1.0f, -2.0f);
-            newIco->set_position(-3.0f, -1.0f, -2.0f);
 
             floor->set_scale(100.0f);
             floor->set_position(0, -floor->scale().y/2 - 10.0f, 0);
-            floor->set_color(0.65f, 0.85f, 0.95f);
+            floor->set_color(0.9f, 0.9f, 0.9f);
             floor->set_material(Materials::chrome);
             //newCubeptr->set_scale(vec3(3.0f, 3.0f, 3.0f));
 
@@ -223,9 +153,8 @@ namespace ruya
             light->set_specular(vec3( 1.0f, 1.0f, 1.0f));
             
             scene.add_object(newCubeptr);
-            scene.add_object(newIco);
             scene.add_light(light);
-            //scene.add_object(floor);
+            scene.add_object(floor);
 
 
             glm::vec4 bgColor(0.9f, 0.9f, 0.9f, 1.0f); // background color
@@ -245,17 +174,8 @@ namespace ruya
                 float zs = 0.15f;
 
                 float degrees = glm::degrees((float)glfwGetTime());
-                for (Object* obj : objects)
-                    obj->set_rotation(vec3(xs * degrees, ys * degrees, zs * degrees));
                 
                 newCubeptr->set_rotation(vec3(xs * degrees, ys * degrees, zs * degrees));
-                newIco->set_rotation(vec3(xs * degrees, ys * degrees, zs * degrees));
-                mat4 rot(1.0); 
-                rot = glm::rotate(rot, glm::radians(zs * degrees), vec3(1.0f, 0.0f, 0.0f));
-                rot = glm::rotate(rot, glm::radians(xs * degrees), vec3(0.0f, 1.0f, 0.0f));
-                rot = glm::rotate(rot, glm::radians(ys * degrees), vec3(0.0f, 0.0f, 1.0f));
-                vec4 pos = rot * vec4(50, 0, 0, 1);
-                //light->model().set_position(vec3(pos.x, pos.y, pos.z) / pos.w);
                 light->model().set_position(cos(glfwGetTime()) * 7.5f, 5.0f, 3.0f);
 
                 // prepare ui

@@ -15,15 +15,8 @@ int main()
     fs::path exeDir{whereami::getModulePath().dirname()};
     fs::path moduleDir{whereami::getModulePath().dirname()};
 
-    std::cout << exeDir << std::endl;
-    std::cout << moduleDir << std::endl;
-    std::cout << std::endl;
-    std::cout << whereami::getModulePath() << std::endl;
-    std::cout << whereami::getModulePath().basename() << std::endl;
-    std::cout << whereami::getModulePath().dirname() << std::endl;
-    std::cout << whereami::getExecutablePath() << std::endl;
-    std::cout << whereami::getExecutablePath().basename() << std::endl;
-    std::cout << whereami::getExecutablePath().dirname() << std::endl;
+    std::cout << "[INFO] exe dir: " << exeDir << std::endl;
+    std::cout << "[INFO] module dir: " << moduleDir << std::endl;
 
 	ruya::TestApp app(window);
 
