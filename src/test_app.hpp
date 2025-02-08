@@ -107,13 +107,18 @@ namespace ruya
 			std::cout << "Init Scene" << std::endl;
 
 			// the object to render
-			// vector< shared_ptr<Texture>> textures;
-			// textures.push_back(std::make_shared<Texture>("resources/Wood049_1K-PNG/Wood049_1K_Color.png"));
+            Texture::print_max_texture_slots_info();
+
+			fs::path resDir {baseDir / "resources"};
+			fs::path texPathWoodColor {resDir / "asphalt_1k" / "asphalt_1k_color.png"};
+
+			vector< shared_ptr<Texture>> textures;
+			textures.push_back(std::make_shared<Texture>(texPathWoodColor.c_str()));
 			// textures.push_back(std::make_shared<Texture>("resources/Leather026_1K-PNG/Leather026_1K_Color.png"));
 			// textures.push_back(std::make_shared<Texture>("resources/Marble023_1K-PNG/Marble023_1K_Color.png"));
 			// textures.push_back(std::make_shared<Texture>("resources/Metal032_1K-PNG/Metal032_1K_Color.png"));
 			// textures.push_back(std::make_shared<Texture>("resources/Fabric004_1K-PNG/Fabric004_1K_Color.png"));
-			// std::cout << "Init textures" << std::endl;
+			std::cout << "Init textures" << std::endl;
 
 			vector<Object*> objects;
 			int radius = 2; // radius of grid, so grid will have 2r+1 cols and rows
@@ -144,7 +149,8 @@ namespace ruya
 							newObjptr->material().diffuse = vec3(1.0f);
 							newObjptr->material().specular = vec3(1.0f);
 							newObjptr->material().shininess = 1.0f;
-							//newCube.set_texture(textures[i % textures.size()]);
+							// newCube.set_texture(textures[i % textures.size()]);
+							newObjptr->set_texture(textures[0]);
 							objects.push_back(newObjptr);
 							scene.add_object(newObjptr);
 						}

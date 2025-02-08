@@ -155,3 +155,10 @@ add_custom_command(
     ${SRC_DIR}/engine/render/shaders
     $<TARGET_FILE_DIR:${MAIN_TARGET}>/shaders
 )
+
+add_custom_command(
+    TARGET ${MAIN_TARGET} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/resources
+    $<TARGET_FILE_DIR:${MAIN_TARGET}>/resources
+)
