@@ -45,6 +45,7 @@ namespace ruya
 		int mWidth = 0;
 		int mHeight = 0;
 		GLFWwindow* mGLFWwindow = nullptr;
+        const char * GLSL_VERSION = "#version 460 core";
 		RenderMode renderMode = RenderMode::FILL;
 		bool allowRenderModeChange = true;
 

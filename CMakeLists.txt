@@ -135,14 +135,42 @@ target_link_libraries(${MAIN_TARGET} LibWhereAmI)
 target_include_directories(${MAIN_TARGET} PRIVATE "${WAI_DIR}/include")
 
 ##### IMGUI
-#set(IMGUI_DIR "${EXTERNAL_DIR}/imgui")
-#add_subdirectory("${IMGUI_DIR}")
-#target_include_directories(${MAIN_TARGET} PRIVATE 
-#    "${IMGUI_DIR}" 
-#    "${IMGUI_DIR}/backends"
-#    "${IMGUI_DIR}/misc/cpp"
-#)
-#target_link_libraries(${MAIN_TARGET} PRIVATE LibImGui)
+set(IMGUI_DIR "${EXTERNAL_DIR}/imgui")
+
+set(IMGUI_SOURCES
+    # "${IMGUI_DIR}/imconfig.h"
+    "${IMGUI_DIR}/imgui.cpp"
+    # "${IMGUI_DIR}/imgui.h"
+    # "${IMGUI_DIR}/imstb_rectpack.h"
+    # "${IMGUI_DIR}/imstb_textedit.h"
+    # "${IMGUI_DIR}/imstb_truetype.h"
+    "${IMGUI_DIR}/imgui_demo.cpp"
+    "${IMGUI_DIR}/imgui_draw.cpp"
+    # "${IMGUI_DIR}/imgui_internal.h"
+    "${IMGUI_DIR}/imgui_tables.cpp"
+    "${IMGUI_DIR}/imgui_widgets.cpp"
+    "${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp"
+    # "${IMGUI_DIR}/backends/imgui_impl_opengl3.h"
+    # "${IMGUI_DIR}/backends/imgui_impl_opengl3_loader.h"
+    # "${IMGUI_DIR}/backends/imgui_impl_glfw.h"
+    "${IMGUI_DIR}/backends/imgui_impl_glfw.cpp"
+    "${IMGUI_DIR}/misc/cpp/imgui_stdlib.cpp"
+    # "${IMGUI_DIR}/misc/cpp/imgui_stdlib.h"
+)
+
+add_library(LibImGui STATIC ${IMGUI_SOURCES})
+target_include_directories(LibImGui PRIVATE 
+    "${IMGUI_DIR}" 
+    "${IMGUI_DIR}/backends"
+)
+
+target_include_directories(${MAIN_TARGET} PRIVATE 
+   "${IMGUI_DIR}" 
+   "${IMGUI_DIR}/backends"
+   "${IMGUI_DIR}/misc/cpp"
+)
+target_link_libraries(LibImGui glfw)
+target_link_libraries(${MAIN_TARGET} LibImGui)
 
 
 

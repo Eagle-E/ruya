@@ -65,8 +65,13 @@
         "xmemory": "cpp",
         "xstring": "cpp",
         "xtr1common": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "*.rh": "cpp"
     },
+    "cmake.generator": "",
+    "cmake.preferredGenerators": [
+        "Ninja"
+    ],
     // "linux": {
     //     // "cmake.sourceDirectory": "/home/userz/projects/Ruya/"
     // },
