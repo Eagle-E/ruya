@@ -74,6 +74,7 @@ list(TRANSFORM SOURCES PREPEND "src/")
 
 # targets to be used throughout our build process
 set(MAIN_TARGET "main")
+set(SAMPLE_TARGET "sample")
 
 
 # create main target and add its sources
@@ -86,11 +87,21 @@ target_sources(${MAIN_TARGET} PRIVATE
 )
 
 
+add_executable(${SAMPLE_TARGET})
+target_sources(${SAMPLE_TARGET} PRIVATE 
+    ${SOURCES} 
+    ${HEADERS}
+    "src/sample_main.cpp"
+    "src/sample_app.hpp"
+)
+
+
 # add the src dir as include so that it can serve as the root for all our includes
 #   =>  no matter where a source file is located within src/, it can include any other 
 #       src file by providing the path starting from src/ as root, 
 #           i.e. `#include "mydir/myfile.h"` includes the file located at src/mydir/myfile.h
 target_include_directories(${MAIN_TARGET} PRIVATE ${SRC_DIR})
+target_include_directories(${SAMPLE_TARGET} PRIVATE ${SRC_DIR})
 
 
 ####################################################################################################
@@ -102,7 +113,6 @@ set(DEPENDENCY_PRIVATE_INCLUDES)
 set(EXTERNAL_DIR "${CMAKE_SOURCE_DIR}/external")
 
 # include the "external" dir
-target_include_directories(${MAIN_TARGET} PRIVATE "${EXTERNAL_DIR}")
 list(APPEND DEPENDENCY_PRIVATE_INCLUDES "${EXTERNAL_DIR}")
 
 
@@ -198,6 +208,9 @@ message(">>>>>>>>>>>>> DEPENDENCY_PRIVATE_INCLUDES: ${DEPENDENCY_PRIVATE_INCLUDE
 
 target_link_libraries(${MAIN_TARGET} ${DEPENDENCY_LIBS})
 target_include_directories(${MAIN_TARGET} PRIVATE ${DEPENDENCY_PRIVATE_INCLUDES})
+
+target_link_libraries(${SAMPLE_TARGET} ${DEPENDENCY_LIBS})
+target_include_directories(${SAMPLE_TARGET} PRIVATE ${DEPENDENCY_PRIVATE_INCLUDES})
 
 
 ####################################################################################################
