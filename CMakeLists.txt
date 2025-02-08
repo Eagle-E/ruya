@@ -9,6 +9,9 @@ project(
 )
 
 
+####################################################################################################
+#####     ruya
+####################################################################################################
 
 set(HEADERS
     app.h
@@ -31,8 +34,8 @@ set(HEADERS
 )
     
 set(SOURCES
-    main.cpp
-    test_app.hpp
+    # main.cpp
+    # test_app.hpp
     engine/core/window.cpp
     engine/render/renderer.cpp
     engine/render/shader.cpp
@@ -62,17 +65,26 @@ set(OPTIONS
 
 )
 
-# targets to be used throughout our build process
-set(MAIN_TARGET "main")
-set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 
 # The source and header files defined here are assumed to be within the src/ folder
+set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 list(TRANSFORM HEADERS PREPEND "src/")
 list(TRANSFORM SOURCES PREPEND "src/")
 
+
+# targets to be used throughout our build process
+set(MAIN_TARGET "main")
+
+
 # create main target and add its sources
 add_executable(${MAIN_TARGET})
-target_sources(${MAIN_TARGET} PRIVATE ${SOURCES} ${HEADERS})
+target_sources(${MAIN_TARGET} PRIVATE 
+    ${SOURCES} 
+    ${HEADERS}
+    "src/main.cpp"
+    "src/test_app.hpp"
+)
+
 
 # add the src dir as include so that it can serve as the root for all our includes
 #   =>  no matter where a source file is located within src/, it can include any other 
@@ -81,13 +93,17 @@ target_sources(${MAIN_TARGET} PRIVATE ${SOURCES} ${HEADERS})
 target_include_directories(${MAIN_TARGET} PRIVATE ${SRC_DIR})
 
 
+####################################################################################################
+#####     DEPENDENCIES
+####################################################################################################
+set(DEPENDENCY_LIBS)
+set(DEPENDENCY_PRIVATE_INCLUDES)
 
-# dependencies
 set(EXTERNAL_DIR "${CMAKE_SOURCE_DIR}/external")
 
 # include the "external" dir
 target_include_directories(${MAIN_TARGET} PRIVATE "${EXTERNAL_DIR}")
- 
+list(APPEND DEPENDENCY_PRIVATE_INCLUDES "${EXTERNAL_DIR}")
 
 
 ##### GLM
@@ -97,13 +113,13 @@ if (LINK_GLM_STATIC)
     message(LINK_GLM_STATIC=${LINK_GLM_STATIC})
     set(BUILD_STATIC_LIBS 1)
     add_subdirectory(${GLM_DIR})
-    target_link_libraries(${MAIN_TARGET} glm_static)
+    list(APPEND DEPENDENCY_LIBS glm_static)
 endif (LINK_GLM_STATIC)
 
 ##### GLFW3
 set(GLFW_DIR "${EXTERNAL_DIR}/glfw")
 add_subdirectory(${GLFW_DIR})
-target_link_libraries(${MAIN_TARGET} glfw)
+list(APPEND DEPENDENCY_LIBS glfw)
 # set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 # set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 # set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -116,8 +132,8 @@ set(GLAD_DIR "${EXTERNAL_DIR}/glad")
 add_library(LibGlad "${GLAD_DIR}/src/glad.c")
 target_include_directories(LibGlad PRIVATE "${GLAD_DIR}/include")
 
-target_link_libraries(${MAIN_TARGET} LibGlad)
-target_include_directories(${MAIN_TARGET} PRIVATE "${GLAD_DIR}/include")
+list(APPEND DEPENDENCY_LIBS LibGlad)
+list(APPEND DEPENDENCY_PRIVATE_INCLUDES "${GLAD_DIR}/include")
 
 
 ##### WHEREAMI: to get the location of the executable path
@@ -131,8 +147,8 @@ add_library(LibWhereAmI
 )
 target_include_directories(LibWhereAmI PRIVATE "${WAI_DIR}/include/whereami")
 
-target_link_libraries(${MAIN_TARGET} LibWhereAmI)
-target_include_directories(${MAIN_TARGET} PRIVATE "${WAI_DIR}/include")
+list(APPEND DEPENDENCY_LIBS LibWhereAmI)
+list(APPEND DEPENDENCY_PRIVATE_INCLUDES "${WAI_DIR}/include")
 
 ##### IMGUI
 set(IMGUI_DIR "${EXTERNAL_DIR}/imgui")
@@ -164,15 +180,29 @@ target_include_directories(LibImGui PRIVATE
     "${IMGUI_DIR}/backends"
 )
 
-target_include_directories(${MAIN_TARGET} PRIVATE 
-   "${IMGUI_DIR}" 
-   "${IMGUI_DIR}/backends"
-   "${IMGUI_DIR}/misc/cpp"
+
+list(APPEND DEPENDENCY_PRIVATE_INCLUDES 
+    "${IMGUI_DIR}" 
+    "${IMGUI_DIR}/backends"
+    "${IMGUI_DIR}/misc/cpp"
 )
+
 target_link_libraries(LibImGui glfw)
-target_link_libraries(${MAIN_TARGET} LibImGui)
+
+list(APPEND DEPENDENCY_LIBS LibImGui)
 
 
+##### link & include libraries to executable targets
+message(">>>>>>>>>>>>> DEPENDENCY_LIBS: ${DEPENDENCY_LIBS}")
+message(">>>>>>>>>>>>> DEPENDENCY_PRIVATE_INCLUDES: ${DEPENDENCY_PRIVATE_INCLUDES}")
+
+target_link_libraries(${MAIN_TARGET} ${DEPENDENCY_LIBS})
+target_include_directories(${MAIN_TARGET} PRIVATE ${DEPENDENCY_PRIVATE_INCLUDES})
+
+
+####################################################################################################
+#####     RESOURCES
+####################################################################################################
 
 ##### Resource files: copy resource files (images, txt, shaders) to the executable location 
 # Copy the src/engine/render/shaders folder to shaders/ relative to the destination folder
