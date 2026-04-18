@@ -1,0 +1,60 @@
+#version 460 core
+
+struct Material 
+{
+    vec3 diffuse;
+    vec3 specular;
+    float shininess;
+    sampler2D diffuse_map;
+    sampler2D specular_map;
+}; 
+
+struct Light 
+{
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    vec3 position;  
+};
+
+/*
+`v_` prefix denotes a "varying" variable, meaning its value 
+    is interpolated by previous shaders in the pipeline.
+*/
+
+uniform Light light; 
+uniform Material material;
+// uniform sampler2D diffuse_map_test;
+uniform vec3 lightPosInObjSpace;
+uniform vec3 cameraPosInObjSpace;
+
+in vec3 v_position; // fragment position in object space
+in vec3 v_normal;
+in vec2 v_uv;   // uv texture coordinate, varying: interpolated by vertex shader
+
+out vec4 FragColor;
+
+void main()
+{
+    vec3 albedo = texture(material.diffuse_map, v_uv).rgb;
+
+    // ambient color
+    vec3 ambient = light.ambient * albedo.rgb;
+
+    // diffuse color
+    vec3 norm = normalize(v_normal);
+    vec3 light_dir = normalize(v_position - lightPosInObjSpace);
+    float diffuse_factor = max(dot(-light_dir, norm), 0.0);
+    vec3 diffuse = light.diffuse * diffuse_factor * material.diffuse * albedo;
+
+    // specular component
+    vec3 view_dir = normalize(v_position - cameraPosInObjSpace);
+    vec3 reflection_dir = reflect(light_dir, norm);
+    float specular_effect = pow(max(dot(reflection_dir, -view_dir), 0.0), 32);
+    vec3 specular = light.specular * specular_effect * material.specular * texture(material.specular_map, v_uv).rgb; 
+
+    // final color
+    vec3 result = ambient + diffuse + specular;
+    FragColor = vec4(result, 1.0);
+} 
+

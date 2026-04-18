@@ -1,5 +1,8 @@
 {
     "cmake.sourceDirectory": "${workspaceFolder}",
+    "cmake.useCMakePresets": "always",
+    "cmake.defaultBuildPreset": "ninja-default-build",
+    "cmake.defaultConfigurePreset": "ninja-default",
     "files.associations": {
         "vector": "cpp",
         "random": "cpp",
@@ -66,16 +69,285 @@
         "xstring": "cpp",
         "xtr1common": "cpp",
         "xutility": "cpp",
-        "*.rh": "cpp"
+        "*.rh": "cpp",
+        "csignal": "cpp",
+        "cwctype": "cpp",
+        "any": "cpp",
+        "array": "cpp",
+        "strstream": "cpp",
+        "*.tcc": "cpp",
+        "bitset": "cpp",
+        "cfenv": "cpp",
+        "cinttypes": "cpp",
+        "codecvt": "cpp",
+        "complex": "cpp",
+        "condition_variable": "cpp",
+        "coroutine": "cpp",
+        "deque": "cpp",
+        "map": "cpp",
+        "set": "cpp",
+        "unordered_set": "cpp",
+        "memory_resource": "cpp",
+        "numeric": "cpp",
+        "regex": "cpp",
+        "source_location": "cpp",
+        "string_view": "cpp",
+        "hash_map": "cpp",
+        "hash_set": "cpp",
+        "future": "cpp",
+        "mutex": "cpp",
+        "numbers": "cpp",
+        "ranges": "cpp",
+        "semaphore": "cpp",
+        "shared_mutex": "cpp",
+        "span": "cpp",
+        "stdfloat": "cpp",
+        "stop_token": "cpp",
+        "text_encoding": "cpp",
+        "thread": "cpp",
+        "typeindex": "cpp",
+        "valarray": "cpp",
+        "variant": "cpp"
     },
-    "cmake.generator": "",
-    "cmake.preferredGenerators": [
-        "Ninja"
-    ],
-    // "linux": {
-    //     // "cmake.sourceDirectory": "/home/userz/projects/Ruya/"
-    // },
-    // "windows": {
-    //     "cmake.sourceDirectory": "C:/Users/userz/home/cs/proj/Ruya/main"
-    // }
+    
+    "workbench.colorCustomizations": {
+        "[GitHub Light Default]": {
+            "editor.background": "#f8f8f8",
+            "sideBar.background": "#f8f8f8",
+            "activityBar.background": "#f0f0f0",
+            "titleBar.activeBackground": "#f0f0f0",
+            "titleBar.inactiveBackground": "#f0f0f0",
+            // "statusBar.background": "#f0f0f0",
+            "editorGroupHeader.tabsBackground": "#f5f5f5",
+            "tab.activeBackground": "#ffffff",
+            "tab.inactiveBackground": "#f3f3f3",
+            "panel.background": "#f8f8f8",
+
+            // status bar
+            "statusBar.background": "#1F883D",
+            "statusBar.noFolderBackground": "#1F883D",
+            "statusBar.debuggingBackground": "#1F883D",
+            "statusBar.foreground": "#FFFFFF",
+            "statusBar.debuggingForeground": "#FFFFFF",
+
+            // tabs
+            "tab.activeBorderTop": "#1F883D",
+        },
+        "[Ayu Mirage]": {
+            // General background/foreground
+            "sideBar.background": "#222629",          // dark grey
+            "sideBar.foreground": "#D7DDE4",          // light grey-blue text
+            "sideBarSectionHeader.foreground": "#D7DDE4",
+            "sideBarSectionHeader.background": "#222629",
+
+            // Explorer tree items
+            "list.activeSelectionBackground": "#30363D",
+            "list.activeSelectionForeground": "#FFFFFF",
+            "list.inactiveSelectionBackground": "#2A3036",
+            "list.inactiveSelectionForeground": "#D7DDE4",
+            "list.hoverBackground": "#2A3036",
+            "list.hoverForeground": "#FFFFFF",
+            "list.focusBackground": "#30363D",
+            "list.focusForeground": "#FFFFFF",
+
+            // Make all normal file/folder names brighter
+            "sideBar.foreground": "#D7DDE4",
+
+            // Git decorations (Explorer + tabs)
+            // Keep semantics but improve readability on dark gray.
+            "gitDecoration.addedResourceForeground": "#3FBF6F",        // green for untracked/added
+            "gitDecoration.modifiedResourceForeground": "#E6A450",     // warm amber for modified
+            "gitDecoration.deletedResourceForeground": "#FF6B6B",      // red for deleted
+            "gitDecoration.untrackedResourceForeground": "#3FBF6F",    // same green for untracked
+            "gitDecoration.ignoredResourceForeground": "#6C757D",      // muted grey
+            "gitDecoration.conflictingResourceForeground": "#FF4D4F",  // stronger red for conflicts
+            "gitDecoration.submoduleResourceForeground": "#46B5D1",    // teal/blue for submodules
+
+            // Badges on Explorer (U, M, etc.)
+            "badge.background": "#30363D",
+            "badge.foreground": "#FFFFFF",
+
+            // Editor tabs (optional, but helps match tree)
+            "tab.activeBackground": "#222629",
+            "tab.inactiveBackground": "#181B1E",
+            "tab.activeForeground": "#FFFFFF",
+            "tab.inactiveForeground": "#9CA3AF",
+
+            // Error/warning colors next to file names (shared UI colors)
+            "errorForeground": "#FF6B6B",            // red for errors
+            "editorWarning.foreground": "#F6C962",   // yellow for warnings
+            "editorInfo.foreground": "#4FC3F7"       // soft blue for info
+        }
+    },
+    
+    "editor.tokenColorCustomizations": {
+        "[Clean Sepia]": {
+            "textMateRules": [
+                {
+                    "scope": "keyword.other.unit.suffix.floating-point.cpp",
+                    "settings": {
+                      "foreground": "#ab6526", // Matches digit color
+                      "fontStyle": "normal"    // Removes bold
+                    }
+                  },
+                {
+                    "scope": "variable.other.member, variable.other.property, variable.other.property.cpp, variable.other.member.c",
+                    "settings": {
+                        "foreground": "#2e2e2e", // Pure black
+                        "fontStyle": "italic" // Differentiator
+                    }
+                },
+                {
+                    "scope": "keyword.control, keyword.operator, keyword.other",
+                    "settings": {
+                        "foreground": "#8f371a",
+                        "fontStyle": "bold"
+                    }
+                },
+                {
+                    "scope": "entity.name.type, support.type, storage.type",
+                    "settings": {
+                        "foreground": "#557b64",
+                        "fontStyle": ""
+                    }
+                },
+                {
+                    "scope": "variable.other.readwrite, variable.other.member",
+                    "settings": {
+                        "foreground": "#2d2a32"
+                    }
+                },
+                {
+                    "scope": "entity.name.function, entity.name.function.call",
+                    "settings": {
+                        "foreground": "#00498a", // Warm yellow-orange
+                        "fontStyle": "normal"
+                    }
+                },
+                {
+                    "scope": [
+                        "keyword.operator.arithmetic",
+                        "keyword.operator.bitwise",
+                        "keyword.operator.assignment",
+                        "keyword.operator.comparison",
+                        "keyword.operator.logical"
+                    ],
+                    "settings": {
+                        "foreground": "#8f371a",
+                        "fontStyle": "normal"
+                    }
+                }
+            ]
+        },
+        "[GitHub Light Default]": {
+            "textMateRules": [
+                { // keywords
+                    "scope": [
+                        "constant.language",
+                        "entity.name.class",
+                        "keyword",
+                        "keyword.control",
+                        "storage.type.class",
+                        "storage.type.modifier",
+                        "support.function",
+                    ],
+                    "settings": {
+                        "foreground": "#b64f35"
+                    },
+                },
+                { // types
+                    "scope": [
+                        "storage.type",
+                        "storage.type.primitive",
+                    ],
+                    "settings": {
+                        "foreground": "#077461"
+                    },
+                },
+                {
+                    "scope": [
+                        "entity.name.function.definition"
+                    ],
+                    "settings": {
+                        "fontStyle": "bold"
+                    }
+                },
+                {
+                    "scope": [
+                        "entity.name.function.preprocessor"
+                    ],
+                    "settings": {
+                        "foreground": "#0055bc"
+                    }
+                },
+                
+            ]
+        }
+    },
+    "editor.semanticTokenColorCustomizations": {
+        "[Clean Sepia]": {
+            "rules": {
+                "type": {
+                    "foreground": "#557b64"
+                },
+                "variable": {
+                    "foreground": "#2d2a32"
+                },
+                "function.declaration": {
+                    "foreground": "#00498a",
+                    "fontStyle": "bold"
+                },
+                "function": "#00498a", // Applies to all function references
+                // "operatorOverload": "#8f371a", // Operator functions
+                // "memberOperatorOverload": "#8f371a",
+                // "operator": "#8f371a", // Regular operators
+                "namespace": {
+                    "foreground": "#557b64",
+                    "fontStyle": "italic"
+                }
+            }
+        },
+        "[GitHub Light Default]": {
+            "rules": {
+                "namespace": {
+                    "foreground": "#077461"
+
+                },
+                "type": {
+                    "foreground": "#077461"
+                },
+                "templateType": {
+                    "foreground": "#077461"
+                },
+                "operatorOverload": {
+                    "foreground": "#B64F35"
+                },
+                "macro": {
+                    "foreground": "#00498a",
+                },
+                "function": {
+                    "foreground": "#00498a",
+                },
+                "function.declaration": {
+                    "fontStyle": "bold"
+                },
+                "parameter": {
+                    "foreground": "#464646",
+                    "fontStyle": "italic"
+                },
+                "method": {
+                    "foreground": "#00498a"
+                },
+                "memberOperatorOverload": {
+                    "foreground": "#00498a",
+                    "fontStyle": "bold"
+                }
+            }
+        }
+    },
+    "C_Cpp.enhancedColorization": "enabled",
+    // Ensure Git decorations are on
+    "git.decorations.enabled": true,
+    "explorer.decorations.colors": true,
+    "explorer.decorations.badges": true
 }

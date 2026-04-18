@@ -7,6 +7,7 @@
 #include <exception>
 #include <memory>
 #include <filesystem>
+#include <format>
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -20,33 +21,46 @@
 
 #include "io/stb_image.h"
 #include "app.h"
-#include "engine/core/window.h"
-#include "engine/render/shader.h"
-#include "engine/scene/object.h"
-#include "engine/scene/models/square.h"
-#include "engine/scene/models/cube.h"
-#include "engine/scene/models/icosahedron.h"
-#include "engine/scene/models/icosphere.hpp"
-#include "engine/scene/mesh.h"
-#include "engine/render/renderer.h"
-#include "engine/scene/texture.h"
-#include "engine/scene/camera.h"
-#include "engine/scene/scene.h"
-#include "engine/scene/light_source.h"
-#include "utils/timer.h"
+#include "core/timer.h"
+#include "core/window.h"
+#include "render/shader.h"
+#include "scene/object.h"
+#include "scene/mesh.h"
+#include "render/renderer.h"
+#include "render/texture.hpp"
+#include "scene/camera.h"
+#include "scene/scene.h"
+#include "scene/light.hpp"
+#include "scene/vault.hpp"
+#include "scene/gen.hpp"
+#include "scene/components.hpp"
 
+#include "ui/object_widget.h"
+#include "ui/scene_widget.h"
 
 namespace fs = std::filesystem;
+namespace gen = ruya::scene::gen;
 using std::vector;
 
-using glm::vec3;					using glm::vec2;		using glm::dvec2;
-using ruya::models::Square;			using ruya::Shader;
-using ruya::Mesh;					using ruya::Renderer;
-using ruya::Texture;				using ruya::Camera;
-using ruya::models::Cube;			using ruya::Timer;
-using ruya::models::Icosahedron; 	using ruya::Scene;
-using ruya::LightSource; 			using ruya::models::Icosphere;
+using glm::dvec2;
+using glm::vec2;
+using glm::vec3;	
 
+using ruya::Camera;			                        
+using ruya::Timer;
+using ruya::render::Renderer;
+using ruya::render::Shader;
+using ruya::render::Texture;		
+using ruya::scene::Element;
+using ruya::scene::LightBasic;
+using ruya::scene::Mesh;			
+using ruya::scene::MeshID;
+using ruya::scene::Model;
+using ruya::scene::Scene;
+using ruya::scene::TextureID;
+using ruya::scene::Vault;
+using ruya::scene::materials::Phong;
+using ruya::scene::materials::PhongMaterials;
 
 namespace ruya
 {
@@ -59,11 +73,12 @@ namespace ruya
         dvec2 mOldMousePos;
         bool mAllowShadingModeChange;
         Renderer* mRenderer;
+        int count = 0;
 
     public: // FUNCTIONS
         /*** CONSTRUCT ***/
         TestApp(Window& window) : mWindow(window), mOldMousePos(-1.0, -1.0), mAllowShadingModeChange(true)
-        {
+        { 
             glfwSetInputMode(window.get_GLFW_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
 
@@ -74,27 +89,26 @@ namespace ruya
         }
 
 
-
         /*** MAINLOOP ***/
         void run()
-        {
+        {            
             // init renderer and shaders
             std::cout << "Run start" << std::endl;
-            fs::path baseDir {whereami::getExecutablePath().dirname()};
-            fs::path phongDir {baseDir / "shaders" / "phong"};
-            fs::path flatDir {baseDir / "shaders" / "flat"};
-
-            fs::path phongVertShader {phongDir / "object.vert"};
-            fs::path phongFragShader {phongDir / "object.frag"};
-            fs::path phongFragShaderLights {phongDir / "light_source.frag"};
-
-            fs::path flatVertShader {flatDir / "flat_vert.vert"};
-            fs::path flatFragShader {flatDir / "flat_frag.frag"};
-            fs::path flatGeomShader {flatDir / "flat_geom.geom"};
-
-            Shader shaderPhongObjects(phongVertShader.string().c_str(), phongFragShader.string().c_str());
-            Shader shaderPhongLights(phongVertShader.string().c_str(), phongFragShaderLights.string().c_str());
-            Shader shaderFlat(flatVertShader.string().c_str(), flatGeomShader.string().c_str(), flatFragShader.string().c_str());
+            fs::path base_dir {whereami::getExecutablePath().dirname()};
+            fs::path phong_dir {base_dir / "shaders" / "phong"};
+            fs::path flat_dir {base_dir / "shaders" / "flat"};
+            
+            fs::path phongVertShader {phong_dir / "object.vert"};
+            fs::path phongFragShader {phong_dir / "object.frag"};
+            fs::path phongFragShaderLights {phong_dir / "light_source.frag"};
+            
+            fs::path flatVertShader {flat_dir / "flat_vert.vert"};
+            fs::path flatFragShader {flat_dir / "flat_frag.frag"};
+            fs::path flatGeomShader {flat_dir / "flat_geom.geom"};
+            
+            Shader shaderPhongObjects(phongVertShader, phongFragShader);
+            Shader shaderPhongLights(phongVertShader, phongFragShaderLights);
+            Shader shaderFlat(flatVertShader, flatGeomShader, flatFragShader);
             std::cout << "Init shaders" << std::endl;
 
             Renderer renderer(&shaderPhongObjects, &shaderPhongLights, &mWindow, &mCamera);
@@ -104,140 +118,85 @@ namespace ruya
 
             // init scene
             Scene scene;
+            scene.background_color = vec4(.1f, .1f, .1f, 1.0f);
             std::cout << "Init Scene" << std::endl;
 
 			// the object to render
-            Texture::print_max_texture_slots_info();
+            // ruya::render::print_max_texture_units_info();
 
-			fs::path resDir {baseDir / "resources"};
-			fs::path texPathWoodColor {resDir / "asphalt_1k" / "asphalt_1k_color.png"};
+			fs::path resDir {base_dir / "resources"};
+			fs::path texPathBarrelColor {resDir / "barrel" / "barrel_color.png"};
+			fs::path texPathBarrelSpecular {resDir / "barrel" / "barrel_specular.png"};
+			fs::path texPathEmojiColor {resDir / "emoji" / "emoji_color.png"};
 
-			vector< shared_ptr<Texture>> textures;
-			textures.push_back(std::make_shared<Texture>(texPathWoodColor.c_str()));
-			// textures.push_back(std::make_shared<Texture>("resources/Leather026_1K-PNG/Leather026_1K_Color.png"));
-			// textures.push_back(std::make_shared<Texture>("resources/Marble023_1K-PNG/Marble023_1K_Color.png"));
-			// textures.push_back(std::make_shared<Texture>("resources/Metal032_1K-PNG/Metal032_1K_Color.png"));
-			// textures.push_back(std::make_shared<Texture>("resources/Fabric004_1K-PNG/Fabric004_1K_Color.png"));
+            Vault vault;
+            ImageID barrel_img_id_color = vault.load_image(texPathBarrelColor);
+            ImageID barrel_img_id_specular = vault.load_image(texPathBarrelSpecular);
+            ImageID emoji_img_id = vault.load_image(texPathEmojiColor);
+            vault.add_mesh(gen::cube(), "gen::cube");
+            vault.add_mesh(gen::square(), "gen::square");
+            vault.add_mesh(gen::icosahedron(), "gen::icosahedron");
+            vault.add_mesh(gen::icosphere(), "gen::icosphere");
 			std::cout << "Init textures" << std::endl;
 
-            vector<Object*> objects;
-            int radius = 2; // radius of grid, so grid will have 2r+1 cols and rows
-            float d = 7.5f;
-            for (float i = -radius; i <= radius; i++)
-            {
-                for (float j = -radius; j <= radius; j++)
-                {
-                    if (false)
-                    {
-                        for (float k = -radius; k <= radius; k++)
-                        {
-                            //Object* newObjptr = nullptr;
-                            //if ( (int)(i+j+k) % 2 == 0)
-                            //	newObjptr = new Cube();
-                            //else 
-                            //	newObjptr = new Icosahedron();
-
-							Object* newObjptr = new Icosphere(i + radius);
-							float g = (i + radius) / (2 * radius) * 0.8 + 0.1; // map i and j from [-r, r] to [0.1, 0.8]
-							float b = (j + radius) / (2 * radius) * 0.8 + 0.1;
-							float r = (k + radius) / (2 * radius) * 0.8 + 0.1;
-							//float r = (b + g) / 2.0f;
-							newObjptr->set_color(vec3(r, g, b));
-							newObjptr->set_position(vec3(d * i, d * j, d * k));
-							newObjptr->set_scale(3.0f);
-							newObjptr->material().ambient = vec3(1.0f);
-							newObjptr->material().diffuse = vec3(1.0f);
-							newObjptr->material().specular = vec3(1.0f);
-							newObjptr->material().shininess = 1.0f;
-							// newCube.set_texture(textures[i % textures.size()]);
-							newObjptr->set_texture(textures[0]);
-							objects.push_back(newObjptr);
-							scene.add_object(newObjptr);
-						}
-					}
-					else
-					{
-						Object* newObjptr = new Icosphere(i + radius);
-						float g = (i + radius) / (2 * radius) * 0.8 + 0.1; // map i and j from [-r, r] to [0.1, 0.8]
-						float b = (j + radius) / (2 * radius) * 0.8 + 0.1;
-						//float r = (k + radius) / (2 * radius) * 0.8 + 0.1;
-						float r = (b + g) / 2.0f;
-						newObjptr->set_color(vec3(r, g, b));
-						newObjptr->set_position(vec3(d * i, d * j, -5.0f));
-						newObjptr->set_scale(3.0f);
-						objects.push_back(newObjptr);
-						scene.add_object(newObjptr);
-					}
-				}
-			}
-
             // add spheres in a line
-            Timer timer;
-            printf("Old algo:\n");
-            for (size_t i = 0; i <= 5; i++)
-            {
-                timer.start();
-                Icosphere* sphere = new Icosphere(i);
-                timer.stop();
-                sphere->set_position((i-3.0f) * 2.5f, 2.5f, -1.0f);
-                scene.add_object(sphere);
+            Phong custom_material = Phong{
+                vec3(1.0f,1.0f,1.0f),
+                vec3(1.0f,1.0f,1.0f),
+                1.0f
+            };
 
-                printf("sphere level %zd = %zd vertices, %zd faces (%f s)\n", i, sphere->mesh()->vertices.size(), sphere->mesh()->faces.size(), timer.elapsed_time_s());
-            }
-    
-            /*
-            for (int i = 0; i <= 5; i++)
+            int n_cubes = 5;
+            for (size_t i = 0; i < n_cubes; i++)
             {
-                for (int j = 0; j < 5; j++)
-                {
-                    Icosphere* sphere = new Icosphere(i);
-                    sphere->set_position((i - 3.0f) * 2.5f, 2.5f + j * 2.5f, -1.0f);
-                    scene.add_object(sphere);
+                Object* cube = new Object();
+                cube->model.elements.push_back(
+                    Element{
+                        .mesh = vault.mesh_cache["gen::cube"],
+                        .material = Phong{
+                            .diffuse_map = barrel_img_id_color,
+                            .specular_map = barrel_img_id_specular
+                        },
+                        .transform = Transform{
+                            .position = vec3{(i-3.0f) * 2.5f, 2.5f, -1.0f},
+                            .scale = vec3(1.0f)
+                        }
+                    }
+                );
+                cube->model.elements.push_back(
+                    Element{
+                        .mesh = vault.mesh_cache["gen::cube"],
+                        .material = Phong{
+                            .diffuse_map = emoji_img_id,
+                            .specular_map = barrel_img_id_specular
+                        },
+                        .transform = Transform{
+                            .position = vec3{(i-3.0f) * 2.5f, 2.5f, 1.0f},
+                            .scale = vec3(.5f)
+                        }
+                    }
+                );
+                scene.add_object(cube);
+            }
+            
+            
+            LightBasic * light = new LightBasic();
+            light->model.elements.push_back(
+                Element{
+                    .mesh = vault.mesh_cache["gen::cube"],
                 }
-            }
-            */
-            
-
-            Cube ico;
-            Cube* newCubeptr = new Cube();
-            Cube* floor = new Cube();
-            Icosahedron* newIco= new Icosahedron();
-
-            newCubeptr->set_position(3.0f, -1.0f, -2.0f);
-            newIco->set_position(-3.0f, -1.0f, -2.0f);
-
-            floor->set_scale(100.0f);
-            floor->set_position(0, -floor->scale().y/2 - 10.0f, 0);
-            floor->set_color(0.65f, 0.85f, 0.95f);
-            floor->set_material(Materials::chrome);
-            //newCubeptr->set_scale(vec3(3.0f, 3.0f, 3.0f));
-
-            //ico.set_color(vec3(1.0f, 0.5f, 0.31f));
-            LightSource * light = new LightSource(vec3(1.0f, 1.0f, 1.0f));
-            light->model().set_mesh(ico.mesh()); // the icosahedron obj and the lightsource will share the same mesh
-            light->model().set_position(0.0f, 5.0f, 3.0f);
-            light->model().set_color(vec3(1.0f, 1.0f, 1.0f));
-            //light->model().set_color(vec3(1.0f, 1.0f, 1.0f));
-            light->set_ambient(vec3(0.2f, 0.2f, 0.2f));
-            light->set_diffuse(vec3(0.7f, 0.7f, 0.7f));
-            light->set_specular(vec3( 1.0f, 1.0f, 1.0f));
-            
-            scene.add_object(newCubeptr);
-            scene.add_object(newIco);
+            );
+            light->ambient = vec3(0.2f, 0.2f, 0.2f);
+            light->diffuse = vec3(0.7f, 0.7f, 0.7f);
+            light->specular = vec3(1.0f, 1.0f, 1.0f);
             scene.add_light(light);
-            //scene.add_object(floor);
-
-
-            glm::vec4 bgColor(0.9f, 0.9f, 0.9f, 1.0f); // background color
+            
             ruya::Timer timerOutput;
             timerOutput.start();
-
+            
             while (!mWindow.should_close())
             {
                 mFrameTimer.start();
-                // change window color
-                glClearColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                 // some transforming
                 float xs = 0.45f; // rotation speeds
@@ -245,38 +204,27 @@ namespace ruya
                 float zs = 0.15f;
 
                 float degrees = glm::degrees((float)glfwGetTime());
-                for (Object* obj : objects)
-                    obj->set_rotation(vec3(xs * degrees, ys * degrees, zs * degrees));
                 
-                newCubeptr->set_rotation(vec3(xs * degrees, ys * degrees, zs * degrees));
-                newIco->set_rotation(vec3(xs * degrees, ys * degrees, zs * degrees));
-                mat4 rot(1.0); 
-                rot = glm::rotate(rot, glm::radians(zs * degrees), vec3(1.0f, 0.0f, 0.0f));
-                rot = glm::rotate(rot, glm::radians(xs * degrees), vec3(0.0f, 1.0f, 0.0f));
-                rot = glm::rotate(rot, glm::radians(ys * degrees), vec3(0.0f, 0.0f, 1.0f));
-                vec4 pos = rot * vec4(50, 0, 0, 1);
-                //light->model().set_position(vec3(pos.x, pos.y, pos.z) / pos.w);
-                light->model().set_position(cos(glfwGetTime()) * 7.5f, 5.0f, 3.0f);
+                light->position = {cos(glfwGetTime()) * 7.5f, 5.0f, 3.0f};
 
                 // prepare ui
                 ImGui_ImplOpenGL3_NewFrame();
                 ImGui_ImplGlfw_NewFrame();
                 ImGui::NewFrame();
                 {
-                    ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-                    ImGui::Button("Button");
-                    ImGui::End();
-                }
-                {
-                    ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-                    ImGui::Text("Hello from another window!");
-                    ImGui::Button("Close Me");
+                    // In your ImGui window:
+                    ImGui::Begin("Settings");
+                    {
+                        ruya::ui::scene_widget(scene);
+                    }
                     ImGui::End();
                 }
                 
+
 				// RENDER!!!
-				ImGui::Render();
-                renderer.render_scene(scene);
+                mWindow.clear_frame_buffer(scene.background_color);
+                ImGui::Render();
+                renderer.render_scene(scene, vault);
                 ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
                 // update frame => swaps buffers = starts showing newly rendered buffer
@@ -300,8 +248,41 @@ namespace ruya
                 poll_events();
             }
         }
-        
+
         void poll_events()
+        {
+            ImGuiIO& imgui_io = ImGui::GetIO();
+            
+            GLFWwindow* glfwWindow = mWindow.get_GLFW_window();
+            
+            if (glfwGetKey(glfwWindow, GLFW_KEY_2) == GLFW_PRESS && mAllowShadingModeChange)
+            {
+                if (mRenderer != nullptr)
+                {
+                    if (mRenderer->shading_mode() == Renderer::ShadingMode::FLAT)
+                        mRenderer->set_shading_mode(Renderer::ShadingMode::SMOOTH);
+                    else 
+                        mRenderer->set_shading_mode(Renderer::ShadingMode::FLAT);
+                    mAllowShadingModeChange = false;
+                }
+            }
+            if (glfwGetKey(glfwWindow, GLFW_KEY_2) == GLFW_RELEASE)
+            {
+                mAllowShadingModeChange = true;
+            }
+
+
+            // CAMERA CONTROL
+            
+            // update camera interaction when user is not interacting with imgui
+            if (!imgui_io.WantCaptureMouse) 
+            {
+                update_camera_position();
+                update_camera_look_direction();
+            }
+        }
+
+        void update_camera_position()
         {
             GLFWwindow* glfwWindow = mWindow.get_GLFW_window();
             
@@ -365,26 +346,6 @@ namespace ruya
                 pos.y -= moveSpeed * mFrameTimer.elapsed_time_s();
                 mCamera.set_position(pos);
             }
-
-            if (glfwGetKey(glfwWindow, GLFW_KEY_2) == GLFW_PRESS && mAllowShadingModeChange)
-            {
-                if (mRenderer != nullptr)
-                {
-                    if (mRenderer->shading_mode() == Renderer::ShadingMode::FLAT)
-                        mRenderer->set_shading_mode(Renderer::ShadingMode::SMOOTH);
-                    else 
-                        mRenderer->set_shading_mode(Renderer::ShadingMode::FLAT);
-                    mAllowShadingModeChange = false;
-                }
-            }
-            if (glfwGetKey(glfwWindow, GLFW_KEY_2) == GLFW_RELEASE)
-            {
-                mAllowShadingModeChange = true;
-            }
-
-
-            // MOUSE MOVEMENT
-            update_camera_look_direction();
         }
 
         void update_camera_look_direction()
@@ -392,6 +353,20 @@ namespace ruya
             // get new pos
             dvec2 pos;
             glfwGetCursorPos(mWindow.get_GLFW_window(), &(pos.x), &(pos.y));
+
+            // look around when mouse is pressed
+            GLFWwindow* glfwWindow = mWindow.get_GLFW_window();
+            if (glfwGetMouseButton(glfwWindow, GLFW_MOUSE_BUTTON_1) == GLFW_RELEASE)
+            {
+                mWindow.set_cursor_mode(Window::CursorMode::NORMAL);
+                mOldMousePos = pos; // so that the view doesn't jump when pressing the button to rotate camera
+                return;
+            }
+            if (glfwGetMouseButton(glfwWindow, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
+            {
+                mWindow.set_cursor_mode(Window::CursorMode::DISABLED);
+            }
+
 
             // init mouse pos if this is the first time
             if (-1 <= mOldMousePos.x && mOldMousePos.x <= -0.95
