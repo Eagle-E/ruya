@@ -1,17 +1,20 @@
 #ifndef SCENE_WIDGET_HPP
 #define SCENE_WIDGET_HPP
 
+#include <format>
+#include <string>
 #include <imgui/imgui.h>
 
-#include "scene/object.h"
 #include "scene/light.hpp"
+#include "scene/components.hpp"
 
-#include "scene/scene.h"
-#include "ui/object_widget.h"
+#include "scene/scene.hpp"
+#include "ui/model_widget.h"
 #include "ui/light_widget.h"
 #include "ui/widgets.hpp"
 
 using ruya::scene::Scene;
+using ruya::scene::Model;
 
 namespace ruya::ui
 {
@@ -32,19 +35,27 @@ void scene_widget(Scene& scene)
         // light emitting entities
         if(ImGui::TreeNode("Lights"))
         {
-            for (LightBasic* light : scene.get_light_sources())
+            auto lights_view = scene.registry.view<LightBasic>();
+            for (entt::entity light_entity : lights_view)
             {
-                ruya::ui::light_widget(*light);
+                LightBasic& light = lights_view.get<LightBasic>(light_entity);
+                Model* model = scene.registry.try_get<Model>(light_entity);
+                int light_id = static_cast<int>(light_entity);
+                ruya::ui::light_widget(light_id, light, model);
             }
             ImGui::TreePop();
         }
 
         // standard objects
-        if(ImGui::TreeNode("Objects"))
+        if(ImGui::TreeNode("Models"))
         {
-            for (Object* obj : scene.get_scene_objects())
+            auto models_view = scene.registry.view<Model>(entt::exclude<LightBasic>);
+            for (entt::entity model_entity : models_view)
             {
-                ruya::ui::object_widget(*obj);
+                Model& model = models_view.get<Model>(model_entity);
+                int model_id = static_cast<int>(model_entity);
+                auto label = std::format("Model {}", model_id);
+                ruya::ui::model_widget(model, label);
             }
             ImGui::TreePop();
         }

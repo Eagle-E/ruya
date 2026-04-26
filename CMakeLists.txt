@@ -9,6 +9,7 @@ project(
     VERSION 0.0.0
 )
 
+include(FetchContent)
 
 ####################################################################################################
 #####     ruya
@@ -16,7 +17,6 @@ project(
 
 set(HEADERS
     app.h
-    core/math/transform.h
     core/timer.h
     core/uuid.h
     core/window.h
@@ -26,14 +26,12 @@ set(HEADERS
     scene/camera.h
     scene/material.h
     scene/mesh.h
-    scene/object.h
-    scene/scene.h
 )
     
 set(SOURCES
     # main.cpp
     # test_app.hpp
-    core/math/transform.cpp
+    core/math/transform.hpp
     core/timer.cpp
     core/window.cpp
     io/file_io.hpp
@@ -49,10 +47,10 @@ set(SOURCES
     scene/light.hpp
     scene/material.cpp
     scene/mesh.cpp
-    scene/scene.cpp
+    scene/scene.hpp
     scene/vault.hpp
     ui/light_widget.h
-    ui/object_widget.h
+    ui/model_widget.h
     ui/scene_widget.h
     ui/widgets.hpp
 )
@@ -192,6 +190,18 @@ list(APPEND DEPENDENCY_PRIVATE_INCLUDES
 target_link_libraries(LibImGui glfw)
 
 list(APPEND DEPENDENCY_LIBS LibImGui)
+
+
+##### ENTT
+# Note: if there would be no internet, a copy of ENTTs source is added to external/
+FetchContent_Declare(
+    entt
+    GIT_REPOSITORY https://github.com/skypjack/entt.git
+    GIT_TAG        v3.16.0
+)
+FetchContent_MakeAvailable(entt)
+list(APPEND DEPENDENCY_LIBS EnTT::EnTT)
+
 
 
 ##### link & include libraries to executable targets

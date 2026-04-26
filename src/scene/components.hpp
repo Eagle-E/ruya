@@ -5,7 +5,7 @@
 #include <glad/glad.h>
 #include "scene/vault.hpp"
 #include "scene/material.h"
-#include "core/math/transform.h"
+#include "core/math/transform.hpp"
 
 using ruya::scene::TextureID;
 using ruya::scene::MeshID;

@@ -1,6 +1,7 @@
 #include <list>
 #include <iostream>
 
+#include <entt/entt.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -8,15 +9,17 @@
 
 #include "render/renderer.h"
 #include "render/texture.hpp"
+#include "scene/components.hpp"
 #include "scene/vault.hpp"
 #include "render/gpu_vault.hpp"
 
-using ruya::scene::materials::Phong;
-using ruya::scene::Vault;
-using ruya::scene::TextureID;
 using ruya::render::MeshGPU;
-using ruya::render::resolve_texture;
 using ruya::render::resolve_mesh;
+using ruya::render::resolve_texture;
+using ruya::scene::Model;
+using ruya::scene::TextureID;
+using ruya::scene::Vault;
+using ruya::scene::materials::Phong;
 
 using std::list;
 using glm::mat4;	using glm::mat3;
@@ -57,29 +60,35 @@ void ruya::render::Renderer::render_scene(Scene& scene, Vault& vault)
 	mat4 VP = projection * mCamera->view_matrix();
 
 	// render scene objects
-	list<Object*>& objects = scene.get_scene_objects();
-	for (Object* obj : objects)
+	auto lights_view = scene.registry.view<LightBasic>();
+	auto light_entity = lights_view.front();
+	if (light_entity == entt::null)
 	{
-		const LightBasic& light = **(scene.get_light_sources().begin());
-		render_model(obj->model, VP, light, activeObjectShader, vault);
+		return;
+	}
+	LightBasic& light = lights_view.get<LightBasic>(light_entity);
+
+	auto model_view = scene.registry.view<Model>(entt::exclude<LightBasic>);
+	for (auto [entity, model] : model_view.each())
+	{
+		render_model(model, VP, light, activeObjectShader, vault);
 	}
 
 	// LIGHT SOURCES
 	mShaderLights->use();
-	list<LightBasic*> lights = scene.get_light_sources();
-	for (LightBasic* light : lights)
-	{
-		render_light_source(*light, VP, vault);
-	}
+	auto lights_with_model_view = scene.registry.view<LightBasic, Model>();
+	lights_with_model_view.each([&](auto entity, LightBasic& light, Model& model) {
+		render_light_source(light, VP, vault, model);
+	});
 }
 
 /*
-* Handles the necessary OpenGL calls to render the object with the shader program
-* that this Renderer has. If the Mesh of the Object is being rendered for the first
+* Handles the necessary OpenGL calls to render the model with the shader program
+* that this Renderer has. If the Mesh of the model is being rendered for the first
 * time, the necessary buffers (VAO, VBO & EBO) will be created automatically.
 * 
 * Args:
-* - obj: object to render
+* - model: model to render
 * - VP: view projection matrix
 * - ... the rest is self explanatory
 *
@@ -153,12 +162,13 @@ void ruya::render::Renderer::render_element(
 void ruya::render::Renderer::render_light_source(
 	LightBasic& light,
 	const mat4& VP,
-	Vault& vault
+	Vault& vault,
+	Model& model
 )
 {
 	mShaderLights->set_vec3("obj_color", light.diffuse);
 	
-	for (const Element& element : light.model.elements)
+	for (const Element& element : model.elements)
 	{
 		// TODO: remove `position` member var from light
 		// edge case: light has model.transform component but also a separate vec3 position.

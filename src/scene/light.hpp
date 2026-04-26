@@ -13,8 +13,6 @@ namespace ruya::scene
 	
 	struct LightBasic
 	{
-		UUID id = ruya::generate_uuid();
-        Model model;
 		vec3 position {0.0f};
 		vec3 ambient {1.0f};
 		vec3 diffuse {1.0f};

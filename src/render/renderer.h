@@ -15,7 +15,7 @@
 #include "scene/components.hpp"
 #include "scene/light.hpp"
 #include "scene/mesh.h"
-#include "scene/scene.h"
+#include "scene/scene.hpp"
 #include "scene/vault.hpp"
 
 using glm::mat4;
@@ -63,7 +63,7 @@ namespace ruya::render
 
 		void render_model(Model& obj, const mat4& VP, const LightBasic& light, Shader * activeShader, Vault& vault);
 		void render_element(Element& obj, const mat4& VP, const LightBasic& light, Shader * activeShader, Vault& vault);
-		void render_light_source(LightBasic& light, const mat4& VP, Vault& vault);
+		void render_light_source(LightBasic& light, const mat4& VP, Vault& vault, Model& model);
 		void draw_mesh(MeshID mesh, Vault& vault);
 
 		// MeshGPU buffer_mesh(const Mesh& mesh);
