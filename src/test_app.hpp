@@ -177,9 +177,10 @@ namespace ruya
             
             
             LightBasic light {
+                .position = vec3{(2-3.0f) * 2.5f, 1.0f, 3.0f},
                 .ambient = vec3(0.2f, 0.2f, 0.2f),
                 .diffuse = vec3(0.7f, 0.7f, 0.7f),
-                .specular = vec3(1.0f, 1.0f, 1.0f)
+                .specular = vec3(1.0f, 1.0f, 1.0f),
             };
             Model light_model;
             light_model.elements.push_back(
@@ -198,7 +199,7 @@ namespace ruya
                 _frame_timer.start();
 
                 // move the light around
-                scene.registry.get<LightBasic>(light_entity).position = {cos(glfwGetTime()) * 7.5f, 5.0f, 3.0f};
+                // scene.registry.get<LightBasic>(light_entity).position = {cos(glfwGetTime()) * 7.5f, 5.0f, 3.0f};
 
                 // prepare ui
                 ImGui_ImplOpenGL3_NewFrame();

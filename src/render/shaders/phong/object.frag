@@ -59,5 +59,9 @@ void main()
     // final color
     vec3 result = ambient + diffuse + specular;
     FragColor = vec4(result, 1.0);
+
+    // Debug: render normal value as color
+    // vec3 norm_colors = (v_normal + 1) / 2;
+    // FragColor = vec4(norm_colors, 1.0);
 } 
 

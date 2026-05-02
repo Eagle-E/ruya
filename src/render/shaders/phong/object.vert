@@ -19,9 +19,11 @@ out vec2 v_uv;
 void main()
 {
     vec4 world_pos = M * vec4(position, 1.0);
-    vec4 world_normal = M * vec4(normal, 1.0);
     v_position = world_pos.xyz;
-    v_normal = world_normal.xyz;
-    v_uv = uv;
     gl_Position = VP * world_pos;
+
+    mat3 M_norm = mat3(transpose(inverse(M)));
+    v_normal = M_norm * normal;
+    
+    v_uv = uv;
 }
