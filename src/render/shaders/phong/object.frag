@@ -14,7 +14,7 @@ struct Material
     sampler2D specular_map;
 }; 
 
-struct Light 
+struct SimpleLight 
 {
     vec3 ambient;
     vec3 diffuse;
@@ -27,7 +27,7 @@ struct Light
     is interpolated by previous shaders in the pipeline.
 */
 
-uniform Light light; 
+uniform SimpleLight simple_light; 
 uniform Material material;
 uniform vec3 camera_position;
 
@@ -37,24 +37,26 @@ in vec2 v_uv;   // uv texture coordinate, varying: interpolated by vertex shader
 
 out vec4 FragColor;
 
+
+
 void main()
 {
     vec3 albedo = texture(material.diffuse_map, v_uv).rgb;
 
     // ambient color
-    vec3 ambient = light.ambient * albedo.rgb;
+    vec3 ambient = simple_light.ambient * albedo.rgb;
 
     // diffuse color
-    vec3 norm = normalize(v_normal);
-    vec3 light_dir = normalize(v_position - light.position);
-    float diffuse_factor = max(dot(-light_dir, norm), 0.0);
-    vec3 diffuse = light.diffuse * diffuse_factor * material.diffuse * albedo;
+    vec3 normal = normalize(v_normal);
+    vec3 light_dir = normalize(v_position - simple_light.position);
+    float diffuse_factor = max(dot(-light_dir, normal), 0.0);
+    vec3 diffuse = simple_light.diffuse * diffuse_factor * material.diffuse * albedo;
 
     // specular component
     vec3 view_dir = normalize(v_position - camera_position);
-    vec3 reflection_dir = reflect(light_dir, norm);
+    vec3 reflection_dir = reflect(light_dir, normal);
     float specular_effect = pow(max(dot(reflection_dir, -view_dir), 0.0), 32);
-    vec3 specular = light.specular * specular_effect * material.specular * texture(material.specular_map, v_uv).rgb; 
+    vec3 specular = simple_light.specular * specular_effect * material.specular * texture(material.specular_map, v_uv).rgb; 
 
     // final color
     vec3 result = ambient + diffuse + specular;

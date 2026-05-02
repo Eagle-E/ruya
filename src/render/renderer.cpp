@@ -139,10 +139,10 @@ void ruya::render::Renderer::render_element(
 	activeShader->set_float("material.shininess", material.shininess);
 	
 	// light uniform
-	activeShader->set_vec3("light.ambient", light.ambient);
-	activeShader->set_vec3("light.diffuse", light.diffuse);
-	activeShader->set_vec3("light.specular", light.specular);
-	activeShader->set_vec3("light.position", light.position);
+	activeShader->set_vec3("simple_light.ambient", light.ambient);
+	activeShader->set_vec3("simple_light.diffuse", light.diffuse);
+	activeShader->set_vec3("simple_light.specular", light.specular);
+	activeShader->set_vec3("simple_light.position", light.position);
 	
 	// calc model-view-projection matrix
 	mat4 M = ruya::math::model_matrix(element.transform);
