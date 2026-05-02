@@ -146,7 +146,9 @@ void ruya::render::Renderer::render_element(
 	
 	// calc model-view-projection matrix
 	mat4 M = ruya::math::model_matrix(element.transform);
+	mat4 N = glm::transpose(glm::inverse(M));
 	activeShader->set_mat4("M", M);
+	activeShader->set_mat4("N", N);
 	activeShader->set_mat4("VP", VP);
 
 	// render mesh

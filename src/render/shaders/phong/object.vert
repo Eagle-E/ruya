@@ -10,8 +10,9 @@ layout (location = 1) in vec3 normal;
 layout (location = 2) in vec2 uv;       // texture coordinates
 
 // uniform mat4 MVP;
-uniform mat4 M;
-uniform mat4 VP;
+uniform mat4 M;  // model matrix
+uniform mat4 N;  // normal matrix (inverse of M without the translation component)
+uniform mat4 VP; // view-projection matrix
 out vec3 v_position;
 out vec3 v_normal;
 out vec2 v_uv;
@@ -22,8 +23,6 @@ void main()
     v_position = world_pos.xyz;
     gl_Position = VP * world_pos;
 
-    mat3 M_norm = mat3(transpose(inverse(M)));
-    v_normal = M_norm * normal;
-    
+    v_normal = normalize(mat3(N) * normal);
     v_uv = uv;
 }
