@@ -36,7 +36,19 @@ namespace ruya::ui
         {
             light_settings(light);
             if (model != nullptr)
-                model_widget(*model, std::string("model"));
+            {
+                Model& model_ref = *model;
+                model_widget(model_ref, std::string("model"));
+                
+                // TODO: update if Model gets its own Transform variable
+                // update light position to be the avg of element positions
+                light.position = glm::vec3(0.0f);
+                for (auto element : model_ref.elements)
+                {
+                    light.position += element.transform.position;
+                }
+                light.position /= model_ref.elements.size();
+            }
             ImGui::TreePop();
         }
         ImGui::PopID();

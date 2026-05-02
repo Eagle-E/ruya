@@ -186,6 +186,10 @@ namespace ruya
             light_model.elements.push_back(
                 Element{
                     .mesh = vault.mesh_cache["gen::cube"],
+                    .material = Phong{},
+                    .transform = Transform{
+                        .position = vec3{(2-3.0f) * 2.5f, 1.0f, 3.0f},
+                    }
                 }
             );
             auto light_entity = scene.registry.create();
