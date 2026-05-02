@@ -203,10 +203,10 @@ namespace ruya::scene::gen
             mesh.normals[face[2]] += normal;
         }
 
-	for (int i = 0; i < mesh.normals.size(); i++)
-	{
-		mesh.normals[i] /= 5;
-	}
+        for (int i = 0; i < mesh.normals.size(); i++)
+        {
+            mesh.normals[i] /= 5;
+        }
 
         return mesh;
     }
