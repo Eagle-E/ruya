@@ -1,5 +1,10 @@
 #version 460 core
 
+/*
+Preconditions:
+    - All inputs are in WORLD SPACE
+*/
+
 struct Material 
 {
     vec3 diffuse;
@@ -24,11 +29,9 @@ struct Light
 
 uniform Light light; 
 uniform Material material;
-// uniform sampler2D diffuse_map_test;
-uniform vec3 lightPosInObjSpace;
-uniform vec3 cameraPosInObjSpace;
+uniform vec3 camera_position;
 
-in vec3 v_position; // fragment position in object space
+in vec3 v_position; // fragment position in world space
 in vec3 v_normal;
 in vec2 v_uv;   // uv texture coordinate, varying: interpolated by vertex shader
 
@@ -43,12 +46,12 @@ void main()
 
     // diffuse color
     vec3 norm = normalize(v_normal);
-    vec3 light_dir = normalize(v_position - lightPosInObjSpace);
+    vec3 light_dir = normalize(v_position - light.position);
     float diffuse_factor = max(dot(-light_dir, norm), 0.0);
     vec3 diffuse = light.diffuse * diffuse_factor * material.diffuse * albedo;
 
     // specular component
-    vec3 view_dir = normalize(v_position - cameraPosInObjSpace);
+    vec3 view_dir = normalize(v_position - camera_position);
     vec3 reflection_dir = reflect(light_dir, norm);
     float specular_effect = pow(max(dot(reflection_dir, -view_dir), 0.0), 32);
     vec3 specular = light.specular * specular_effect * material.specular * texture(material.specular_map, v_uv).rgb; 

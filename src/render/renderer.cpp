@@ -117,7 +117,6 @@ void ruya::render::Renderer::render_element(
 )
 {	
 	// Bind the textures and set their uniform location
-	// todo: update `Element` component to have a `Material` member instead of `Texture` then get the image id's from this given element.
 	ImageID diffuse_id = element.material.diffuse_map;
 	Texture texture_diffuse = resolve_texture(diffuse_id, vault, gpu_vault);
 	glActiveTexture(GL_TEXTURE0 + TEXTURE_SLOT_DIFFUSE);
@@ -130,30 +129,25 @@ void ruya::render::Renderer::render_element(
 	glBindTexture(GL_TEXTURE_2D, texture_specular.id);
 	activeShader->set_int("material.specular_map", TEXTURE_SLOT_SPECULAR);
 
-
-	mat4 M = ruya::math::model_matrix(element.transform);
-	mat4 M_inv = glm::inverse(M);
-
 	// pass uniform data
-	vec4 lightPosInObjSpace = M_inv * vec4(light.position, 1.0f);
-	vec4 cameraPosInObjSpace = M_inv * vec4(mCamera->position(), 1.0f);
-	activeShader->set_vec3("lightPosInObjSpace", vec3(lightPosInObjSpace) / lightPosInObjSpace.w);
-	activeShader->set_vec3("cameraPosInObjSpace", vec3(cameraPosInObjSpace) / cameraPosInObjSpace.w);
-
+	activeShader->set_vec3("camera_position", mCamera->position());
+	
 	// material uniform
 	Phong& material = element.material;
 	activeShader->set_vec3("material.diffuse", material.diffuse);
 	activeShader->set_vec3("material.specular", material.specular);
 	activeShader->set_float("material.shininess", material.shininess);
-
+	
 	// light uniform
 	activeShader->set_vec3("light.ambient", light.ambient);
 	activeShader->set_vec3("light.diffuse", light.diffuse);
 	activeShader->set_vec3("light.specular", light.specular);
-
+	activeShader->set_vec3("light.position", light.position);
+	
 	// calc model-view-projection matrix
-	mat4 MVP = VP * M;
-	activeShader->set_mat4("MVP", MVP);
+	mat4 M = ruya::math::model_matrix(element.transform);
+	activeShader->set_mat4("M", M);
+	activeShader->set_mat4("VP", VP);
 
 	// render mesh
 	draw_mesh(element.mesh, vault);
@@ -176,8 +170,8 @@ void ruya::render::Renderer::render_light_source(
 		T.position += light.position;
 
 		mat4 M = ruya::math::model_matrix(T);
-		mat4 MVP = VP * M;
-		mShaderLights->set_mat4("MVP", MVP);
+		mShaderLights->set_mat4("M", M);
+		mShaderLights->set_mat4("VP", VP);
 		draw_mesh(element.mesh, vault);
 	}
 }
