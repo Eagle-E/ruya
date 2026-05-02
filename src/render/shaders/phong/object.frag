@@ -37,29 +37,43 @@ in vec2 v_uv;   // uv texture coordinate, varying: interpolated by vertex shader
 
 out vec4 FragColor;
 
-
-
-void main()
+/* Compute fragment color imposed by given light.
+Args:
+    - light: the light object whose effect we want to calculate
+    - material: material of the surface corresponsing with the fragment
+    - position: frag pos in world space
+    - normal: frag normal in world space
+    - uv: texture coords corresponding with the fragment
+    - camera_position: cam pos in world space
+*/
+vec3 calc_simple_light(SimpleLight light, Material material, vec3 position, vec3 normal, vec2 uv, vec3 camera_position)
 {
-    vec3 albedo = texture(material.diffuse_map, v_uv).rgb;
+    // preparatory stuff
+    vec3 albedo = texture(material.diffuse_map, uv).rgb;
 
     // ambient color
-    vec3 ambient = simple_light.ambient * albedo.rgb;
+    vec3 ambient = light.ambient * albedo.rgb;
 
     // diffuse color
-    vec3 normal = normalize(v_normal);
-    vec3 light_dir = normalize(v_position - simple_light.position);
+    vec3 light_dir = normalize(position - light.position);
     float diffuse_factor = max(dot(-light_dir, normal), 0.0);
-    vec3 diffuse = simple_light.diffuse * diffuse_factor * material.diffuse * albedo;
+    vec3 diffuse = light.diffuse * diffuse_factor * material.diffuse * albedo;
 
     // specular component
-    vec3 view_dir = normalize(v_position - camera_position);
+    vec3 view_dir = normalize(position - camera_position);
     vec3 reflection_dir = reflect(light_dir, normal);
     float specular_effect = pow(max(dot(reflection_dir, -view_dir), 0.0), 32);
-    vec3 specular = simple_light.specular * specular_effect * material.specular * texture(material.specular_map, v_uv).rgb; 
+    vec3 specular = light.specular * specular_effect * material.specular * texture(material.specular_map, uv).rgb; 
 
     // final color
     vec3 result = ambient + diffuse + specular;
+    return result;
+}
+
+void main()
+{
+    vec3 normal = normalize(v_normal);
+    vec3 result = calc_simple_light(simple_light, material, v_position, normal, v_uv, camera_position);
     FragColor = vec4(result, 1.0);
 
     // Debug: render normal value as color
