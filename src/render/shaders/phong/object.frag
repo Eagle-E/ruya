@@ -14,7 +14,7 @@ struct Material
     sampler2D specular_map;
 }; 
 
-struct SimpleLight 
+struct BasicLight 
 {
     vec3 ambient;
     vec3 diffuse;
@@ -27,7 +27,9 @@ struct SimpleLight
     is interpolated by previous shaders in the pipeline.
 */
 
-uniform SimpleLight simple_light; 
+#define N_BASIC_LIGHTS 4
+uniform BasicLight simple_lights[N_BASIC_LIGHTS];
+uniform BasicLight simple_light;
 uniform Material material;
 uniform vec3 camera_position;
 
@@ -46,7 +48,7 @@ Args:
     - uv: texture coords corresponding with the fragment
     - camera_position: cam pos in world space
 */
-vec3 calc_simple_light(SimpleLight light, Material material, vec3 position, vec3 normal, vec2 uv, vec3 camera_position)
+vec3 calc_simple_light(BasicLight light, Material material, vec3 position, vec3 normal, vec2 uv, vec3 camera_position)
 {
     // preparatory stuff
     vec3 albedo = texture(material.diffuse_map, uv).rgb;
@@ -73,7 +75,14 @@ vec3 calc_simple_light(SimpleLight light, Material material, vec3 position, vec3
 void main()
 {
     vec3 normal = normalize(v_normal);
-    vec3 result = calc_simple_light(simple_light, material, v_position, normal, v_uv, camera_position);
+    // vec3 result = calc_simple_light(simple_light, material, v_position, normal, v_uv, camera_position);
+    // FragColor = vec4(result, 1.0);
+
+    vec3 result = vec3(0,0,0);
+    for (int i = 0; i < N_BASIC_LIGHTS; i++)
+    {
+        result += calc_simple_light(simple_lights[i], material, v_position, normal, v_uv, camera_position);
+    }
     FragColor = vec4(result, 1.0);
 
     // Debug: render normal value as color

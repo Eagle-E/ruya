@@ -35,10 +35,10 @@ void scene_widget(Scene& scene)
         // light emitting entities
         if(ImGui::TreeNode("Lights"))
         {
-            auto lights_view = scene.registry.view<LightBasic>();
+            auto lights_view = scene.registry.view<BasicLight>();
             for (entt::entity light_entity : lights_view)
             {
-                LightBasic& light = lights_view.get<LightBasic>(light_entity);
+                BasicLight& light = lights_view.get<BasicLight>(light_entity);
                 Model* model = scene.registry.try_get<Model>(light_entity);
                 int light_id = static_cast<int>(light_entity);
                 ruya::ui::light_widget(light_id, light, model);
@@ -49,7 +49,7 @@ void scene_widget(Scene& scene)
         // standard objects
         if(ImGui::TreeNode("Models"))
         {
-            auto models_view = scene.registry.view<Model>(entt::exclude<LightBasic>);
+            auto models_view = scene.registry.view<Model>(entt::exclude<BasicLight>);
             for (entt::entity model_entity : models_view)
             {
                 Model& model = models_view.get<Model>(model_entity);

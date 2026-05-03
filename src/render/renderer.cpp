@@ -1,5 +1,6 @@
 #include <list>
 #include <iostream>
+#include <format>
 
 #include <entt/entt.hpp>
 #include <glm/glm.hpp>
@@ -60,27 +61,87 @@ void ruya::render::Renderer::render_scene(Scene& scene, Vault& vault)
 	mat4 VP = projection * mCamera->view_matrix();
 
 	// render scene objects
-	auto lights_view = scene.registry.view<LightBasic>();
-	auto light_entity = lights_view.front();
-	if (light_entity == entt::null)
-	{
-		return;
-	}
-	LightBasic& light = lights_view.get<LightBasic>(light_entity);
+	//! auto lights_view = scene.registry.view<BasicLight>();
+	//! auto light_entity = lights_view.front();
+	//! if (light_entity == entt::null)
+	//! {
+	//! 	return;
+	//! }
+	//! BasicLight& light = lights_view.get<BasicLight>(light_entity);
 
-	auto model_view = scene.registry.view<Model>(entt::exclude<LightBasic>);
-	for (auto [entity, model] : model_view.each())
-	{
-		render_model(model, VP, light, activeObjectShader, vault);
-	}
+	//! auto model_view = scene.registry.view<Model>(entt::exclude<BasicLight>);
+	//! for (auto [entity, model] : model_view.each())
+	//! {
+	//! 	render_model(model, VP, light, activeObjectShader, vault);
+	//! }
+	render_models(scene.registry, vault, VP, *activeObjectShader);
 
 	// LIGHT SOURCES
 	mShaderLights->use();
-	auto lights_with_model_view = scene.registry.view<LightBasic, Model>();
-	lights_with_model_view.each([&](auto entity, LightBasic& light, Model& model) {
+	auto lights_with_model_view = scene.registry.view<BasicLight, Model>();
+	lights_with_model_view.each([&](auto entity, BasicLight& light, Model& model) {
 		render_light_source(light, VP, vault, model);
 	});
 }
+
+
+void ruya::render::Renderer::render_models(entt::registry& registry, Vault& vault, const mat4& VP, Shader& active_shader)
+{
+	// set the lights, as they're the same for all models
+	auto lights_view = registry.view<BasicLight>();
+	int idx = 0;
+	lights_view.each(
+		[&](auto entity, BasicLight& light)
+		{
+			active_shader.set_vec3(std::format("simple_lights[{}].ambient", idx), light.ambient);
+			active_shader.set_vec3(std::format("simple_lights[{}].diffuse", idx), light.diffuse);
+			active_shader.set_vec3(std::format("simple_lights[{}].specular", idx), light.specular);
+			active_shader.set_vec3(std::format("simple_lights[{}].position", idx), light.position);
+			idx++;
+		}
+	);
+
+	// camera stuff, same for all models
+	active_shader.set_vec3("camera_position", mCamera->position());
+
+	// render the models
+	auto model_view = registry.view<Model>(entt::exclude<BasicLight>);
+	for (auto [entity, model] : model_view.each())
+	{
+		for (auto & elem : model.elements)
+		{
+			// Bind the textures and set their uniform location
+			ImageID diffuse_id = elem.material.diffuse_map;
+			Texture texture_diffuse = resolve_texture(diffuse_id, vault, gpu_vault);
+			glActiveTexture(GL_TEXTURE0 + TEXTURE_SLOT_DIFFUSE);
+			glBindTexture(GL_TEXTURE_2D, texture_diffuse.id);
+			active_shader.set_int("material.diffuse_map", TEXTURE_SLOT_DIFFUSE);
+
+			ImageID specular_id = elem.material.specular_map;
+			Texture texture_specular = resolve_texture(specular_id, vault, gpu_vault);
+			glActiveTexture(GL_TEXTURE0 + TEXTURE_SLOT_SPECULAR);
+			glBindTexture(GL_TEXTURE_2D, texture_specular.id);
+			active_shader.set_int("material.specular_map", TEXTURE_SLOT_SPECULAR);
+
+			// material uniform
+			Phong& material = elem.material;
+			active_shader.set_vec3("material.diffuse", material.diffuse);
+			active_shader.set_vec3("material.specular", material.specular);
+			active_shader.set_float("material.shininess", material.shininess);
+
+			// calc model-view-projection matrix
+			mat4 M = ruya::math::model_matrix(elem.transform);
+			mat4 N = glm::transpose(glm::inverse(M));
+			active_shader.set_mat4("M", M);
+			active_shader.set_mat4("N", N);
+			active_shader.set_mat4("VP", VP);
+
+			// render mesh
+			draw_mesh(elem.mesh, vault);
+		}	
+	}
+}
+
 
 /*
 * Handles the necessary OpenGL calls to render the model with the shader program
@@ -97,7 +158,7 @@ void ruya::render::Renderer::render_scene(Scene& scene, Vault& vault)
 void ruya::render::Renderer::render_model(
 	Model& model,
 	const mat4& VP,
-	const LightBasic& light,
+	const BasicLight& light,
 	Shader* activeShader,
 	Vault& vault
 )
@@ -111,7 +172,7 @@ void ruya::render::Renderer::render_model(
 void ruya::render::Renderer::render_element(
 	Element& element,
 	const mat4& VP,
-	const LightBasic& light,
+	const BasicLight& light,
 	Shader* activeShader,
 	Vault& vault
 )
@@ -156,7 +217,7 @@ void ruya::render::Renderer::render_element(
 }
 
 void ruya::render::Renderer::render_light_source(
-	LightBasic& light,
+	BasicLight& light,
 	const mat4& VP,
 	Vault& vault,
 	Model& model
@@ -248,121 +309,6 @@ void ruya::render::Renderer::draw_mesh(MeshID mesh_id, Vault& vault)
 	glBindVertexArray(mesh_handle.vao);
 	glDrawElements(GL_TRIANGLES, mesh_handle.index_count, GL_UNSIGNED_INT, 0);
 	assert(glGetError() == GL_NO_ERROR);
-}
-
-
-
-/************************************************************************************************
-*
-*	CLASS TextureSlotManager
-*	 
-************************************************************************************************/
-ruya::render::TextureSlotManager::TextureSlotManager()
-{
-	// init slot maps and priority list
-	int fragShaderMaxSlots = get_max_texture_units();
-	for (int i = GL_TEXTURE0; i < GL_TEXTURE0 + fragShaderMaxSlots; i++)
-	{
-		// init all slots to 0 (= contains no texture)
-		mSlotTextureMap[i] = 0; 
-		// init priorities in numerical order
-		list<GLuint>::iterator slotIter = mSlotPriority.insert(mSlotPriority.end(), i); 
-		// init slot iterators
-		mSlotPriorityRefMap[i] = slotIter;
-	}
-}
-
-/*
-* Binds given texture to one of the slots and returns the slot number so that the
-* caller set the uniform location of the texture sampler to the correct slot number.
-* 
-* @pre: the given texture must have already been created with glTexImage2D()
-*		(which is done by default by the Texture class' constructor)
-*/
-GLuint ruya::render::TextureSlotManager::bind_texture(const ruya::render::Texture& texture)
-{
-	// Check whether the texture is already bound
-	if (mTextureSlotMap[texture.id] == 0)
-	{
-		// free new slot and set map values to new texture id
-		GLuint newSlot = free_slot();
-		mSlotTextureMap[newSlot] = texture.id;
-		mTextureSlotMap[texture.id] = newSlot;
-
-		// make new slot top priority
-		set_top_priority(mSlotPriorityRefMap[newSlot]);
-
-		// bind texture to new slot
-		glActiveTexture(newSlot);
-		glBindTexture(GL_TEXTURE_2D, texture.id);
-	}
-	else
-	{
-		// texture is already bound to a slot, increment slot priority
-		GLuint textureSlot = mTextureSlotMap[texture.id];
-		increment_priority(mSlotPriorityRefMap[textureSlot]);
-	}
-
-	// return slot number the texture has been (or was already) bound to
-	return mTextureSlotMap[texture.id];
-}
-
-/*
-* Frees a texture slot to be used by a new Texture.
-*	Is responsible for internal state changes of TextureSlotManager() when freeing a slot
-* @returns slot number that has been freed.
-*/
-GLuint ruya::render::TextureSlotManager::free_slot()
-{
-	// get number of least priority slot
-	GLuint slot = mSlotPriority.back();
-
-	// unregister texture residing in that slot
-	GLuint oldTextureId = mSlotTextureMap[slot];
-	mTextureSlotMap[oldTextureId] = 0; // tex id might be 0 (invalid) but does no harm
-	
-	// mark texture slot as free by setting its mapped texture value to 0
-	mSlotTextureMap[slot] = 0;
-	glDeleteTextures(1, &slot);
-
-	// return slot num
-	return slot;
-}
-
-/*
-* Moves given slot up one position in the priority list.
-* (this is done when an already-bound texture is being rendered again)
-*/
-void ruya::render::TextureSlotManager::increment_priority(list<GLuint>::iterator& slotIt)
-{
-	// can't increment position if it's the first in the list
-	if (slotIt == mSlotPriority.begin())
-		return;
-
-	// swap values of elements at pos "slotIt" and the one before
-	GLuint temp1 = *slotIt;
-	slotIt--;
-	GLuint temp2 = *slotIt;
-	*slotIt = temp1;
-	slotIt++;
-	*slotIt = temp2;
-}
-
-/*
-* Makes given slot from the mSlotPriority list top priority by placing it at the front of the list.
-* @post: slotIt has been updated but is still pointing to the same slot (that is now at the front of the priority list)
-*/
-void ruya::render::TextureSlotManager::set_top_priority(list<GLuint>::iterator& slotIt)
-{
-	// save slot number and remove slot from priority list
-	GLuint slot = *slotIt;
-	mSlotPriority.erase(slotIt);
-
-	// reinsert slot to the front
-	mSlotPriority.push_front(slot);
-
-	// update slotIt iterator since it was invalidated with the erase operation
-	slotIt = mSlotPriority.begin();
 }
 
 

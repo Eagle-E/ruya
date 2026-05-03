@@ -142,6 +142,7 @@ namespace ruya::render
 
     inline void sync_vaults(Vault& cpu_vault, GPUVault& gpu_vault)
     {
+        // TODO: are the resources cleaned up properly if the vectors are sized down?
         if (gpu_vault.meshes.size() < cpu_vault.meshes.size())
             gpu_vault.meshes.resize(cpu_vault.meshes.size());
         if (gpu_vault.textures.size() < cpu_vault.images.size())

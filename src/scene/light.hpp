@@ -11,7 +11,7 @@ using ruya::scene::Model;
 namespace ruya::scene
 {
 	
-	struct LightBasic
+	struct BasicLight
 	{
 		vec3 position {0.0f};
 		vec3 ambient {1.0f};

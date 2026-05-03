@@ -13,9 +13,17 @@
 
 namespace
 {
-    void light_settings(ruya::scene::LightBasic& light)
+    void light_settings(ruya::scene::BasicLight& light)
     {
-        ruya::ui::color_widget(light.diffuse, "color");
+        ImGui::PushID("ambient");
+        ruya::ui::color_widget(light.ambient, "ambient");
+        ImGui::PopID();
+        ImGui::PushID("diffuse");
+        ruya::ui::color_widget(light.diffuse, "diffuse");
+        ImGui::PopID();
+        ImGui::PushID("specular");
+        ruya::ui::color_widget(light.specular, "specular");
+        ImGui::PopID();
     }
 } 
 
@@ -27,7 +35,7 @@ namespace ruya::ui
         - ligth: the light component representing light characteristics
         - model: an optional visual representation of the light
     */
-    void light_widget(int id, LightBasic& light, Model* model)
+    void light_widget(int id, BasicLight& light, Model* model)
     {
         ImGui::PushID(id);
 
