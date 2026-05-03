@@ -25,9 +25,9 @@ using ruya::scene::materials::Phong;
 using std::list;
 using glm::mat4;	using glm::mat3;
 
-ruya::render::Renderer::Renderer(Shader* shaderObjects, Shader* shaderLights, Window* window, Camera* camera)
-	: mWindow(window), mCamera(camera), mSmoothShaderObjects(shaderObjects), mShaderLights(shaderLights),
-	  mFlatShaderObjects(nullptr), mShadingMode(ShadingMode::SMOOTH)
+ruya::render::Renderer::Renderer(Shader* shader_objects, Shader* shader_lights, Window* window, Camera* camera)
+	: _window(window), _camera(camera), _shader_objects_smooth(shader_objects), _shader_lights(shader_lights),
+	  _shader_objects_flat(nullptr), _shading_mode(ShadingMode::SMOOTH)
 {
 	// enable depth test
 	glEnable(GL_DEPTH_TEST);
@@ -46,38 +46,25 @@ void ruya::render::Renderer::render_scene(Scene& scene, Vault& vault)
 {
 	// OBJECTS
 	// activate object shader to render objects
-	Shader* activeObjectShader = nullptr;
-	switch (mShadingMode)
+	Shader* active_object_shader = nullptr;
+	switch (_shading_mode)
 	{
-		case ShadingMode::SMOOTH:	activeObjectShader = mSmoothShaderObjects;	break;
-		case ShadingMode::FLAT:		activeObjectShader = mFlatShaderObjects;	break;
+		case ShadingMode::SMOOTH:	active_object_shader = _shader_objects_smooth;	break;
+		case ShadingMode::FLAT:		active_object_shader = _shader_objects_flat;	break;
 	}
-	activeObjectShader->use();
+	active_object_shader->use();
 
 	ruya::render::sync_vaults(vault, gpu_vault);
 
 	// get view-projection matrix
-	mat4 projection = glm::perspective(glm::radians(mCamera->fov()), mWindow->aspect_ratio(), 0.1f, 300.0f);
-	mat4 VP = projection * mCamera->view_matrix();
+	mat4 projection = glm::perspective(glm::radians(_camera->fov()), _window->aspect_ratio(), 0.1f, 300.0f);
+	mat4 VP = projection * _camera->view_matrix();
 
 	// render scene objects
-	//! auto lights_view = scene.registry.view<BasicLight>();
-	//! auto light_entity = lights_view.front();
-	//! if (light_entity == entt::null)
-	//! {
-	//! 	return;
-	//! }
-	//! BasicLight& light = lights_view.get<BasicLight>(light_entity);
-
-	//! auto model_view = scene.registry.view<Model>(entt::exclude<BasicLight>);
-	//! for (auto [entity, model] : model_view.each())
-	//! {
-	//! 	render_model(model, VP, light, activeObjectShader, vault);
-	//! }
-	render_models(scene.registry, vault, VP, *activeObjectShader);
+	render_models(scene.registry, vault, VP, *active_object_shader);
 
 	// LIGHT SOURCES
-	mShaderLights->use();
+	_shader_lights->use();
 	auto lights_with_model_view = scene.registry.view<BasicLight, Model>();
 	lights_with_model_view.each([&](auto entity, BasicLight& light, Model& model) {
 		render_light_source(light, VP, vault, model);
@@ -100,9 +87,11 @@ void ruya::render::Renderer::render_models(entt::registry& registry, Vault& vaul
 			idx++;
 		}
 	);
+	active_shader.set_uint("num_simple_lights", lights_view.size());
+
 
 	// camera stuff, same for all models
-	active_shader.set_vec3("camera_position", mCamera->position());
+	active_shader.set_vec3("camera_position", _camera->position());
 
 	// render the models
 	auto model_view = registry.view<Model>(entt::exclude<BasicLight>);
@@ -143,79 +132,6 @@ void ruya::render::Renderer::render_models(entt::registry& registry, Vault& vaul
 }
 
 
-/*
-* Handles the necessary OpenGL calls to render the model with the shader program
-* that this Renderer has. If the Mesh of the model is being rendered for the first
-* time, the necessary buffers (VAO, VBO & EBO) will be created automatically.
-* 
-* Args:
-* - model: model to render
-* - VP: view projection matrix
-* - ... the rest is self explanatory
-*
-* @pre the correct shader program needs to be made current before calling this function.
-*/
-void ruya::render::Renderer::render_model(
-	Model& model,
-	const mat4& VP,
-	const BasicLight& light,
-	Shader* activeShader,
-	Vault& vault
-)
-{	
-	for (auto & elem : model.elements)
-	{
-		render_element(elem, VP, light, activeShader, vault);
-	}
-}
-
-void ruya::render::Renderer::render_element(
-	Element& element,
-	const mat4& VP,
-	const BasicLight& light,
-	Shader* activeShader,
-	Vault& vault
-)
-{	
-	// Bind the textures and set their uniform location
-	ImageID diffuse_id = element.material.diffuse_map;
-	Texture texture_diffuse = resolve_texture(diffuse_id, vault, gpu_vault);
-	glActiveTexture(GL_TEXTURE0 + TEXTURE_SLOT_DIFFUSE);
-	glBindTexture(GL_TEXTURE_2D, texture_diffuse.id);
-	activeShader->set_int("material.diffuse_map", TEXTURE_SLOT_DIFFUSE);
-
-	ImageID specular_id = element.material.specular_map;
-	Texture texture_specular = resolve_texture(specular_id, vault, gpu_vault);
-	glActiveTexture(GL_TEXTURE0 + TEXTURE_SLOT_SPECULAR);
-	glBindTexture(GL_TEXTURE_2D, texture_specular.id);
-	activeShader->set_int("material.specular_map", TEXTURE_SLOT_SPECULAR);
-
-	// pass uniform data
-	activeShader->set_vec3("camera_position", mCamera->position());
-	
-	// material uniform
-	Phong& material = element.material;
-	activeShader->set_vec3("material.diffuse", material.diffuse);
-	activeShader->set_vec3("material.specular", material.specular);
-	activeShader->set_float("material.shininess", material.shininess);
-	
-	// light uniform
-	activeShader->set_vec3("simple_light.ambient", light.ambient);
-	activeShader->set_vec3("simple_light.diffuse", light.diffuse);
-	activeShader->set_vec3("simple_light.specular", light.specular);
-	activeShader->set_vec3("simple_light.position", light.position);
-	
-	// calc model-view-projection matrix
-	mat4 M = ruya::math::model_matrix(element.transform);
-	mat4 N = glm::transpose(glm::inverse(M));
-	activeShader->set_mat4("M", M);
-	activeShader->set_mat4("N", N);
-	activeShader->set_mat4("VP", VP);
-
-	// render mesh
-	draw_mesh(element.mesh, vault);
-}
-
 void ruya::render::Renderer::render_light_source(
 	BasicLight& light,
 	const mat4& VP,
@@ -223,7 +139,7 @@ void ruya::render::Renderer::render_light_source(
 	Model& model
 )
 {
-	mShaderLights->set_vec3("obj_color", light.diffuse);
+	_shader_lights->set_vec3("obj_color", light.diffuse);
 	
 	for (const Element& element : model.elements)
 	{
@@ -233,13 +149,25 @@ void ruya::render::Renderer::render_light_source(
 		T.position += light.position;
 
 		mat4 M = ruya::math::model_matrix(T);
-		mShaderLights->set_mat4("M", M);
-		mShaderLights->set_mat4("VP", VP);
+		_shader_lights->set_mat4("M", M);
+		_shader_lights->set_mat4("VP", VP);
 		draw_mesh(element.mesh, vault);
 	}
 }
 
 
+/*
+* Renders the given mesh by binding the vao and making the draw call.
+* Is also responsible for checking if the mesh has been buffered yet.
+* @pre the mesh must have been buffered earlier with buffer_mesh()
+*/
+void ruya::render::Renderer::draw_mesh(MeshID mesh_id, Vault& vault)
+{
+	MeshGPU mesh_handle = resolve_mesh(mesh_id, vault, gpu_vault);
+	glBindVertexArray(mesh_handle.vao);
+	glDrawElements(GL_TRIANGLES, mesh_handle.index_count, GL_UNSIGNED_INT, 0);
+	assert(glGetError() == GL_NO_ERROR);
+}
 
 
 void GLAPIENTRY ruya::render::Renderer::debug_mesage_callback(
@@ -298,18 +226,7 @@ void GLAPIENTRY ruya::render::Renderer::debug_mesage_callback(
 	//				strError, source, type, severity, message);
 }
 
-/*
-* Renders the given mesh by binding the vao and making the draw call.
-* Is also responsible for checking if the mesh has been buffered yet.
-* @pre the mesh must have been buffered earlier with buffer_mesh()
-*/
-void ruya::render::Renderer::draw_mesh(MeshID mesh_id, Vault& vault)
-{
-	MeshGPU mesh_handle = resolve_mesh(mesh_id, vault, gpu_vault);
-	glBindVertexArray(mesh_handle.vao);
-	glDrawElements(GL_TRIANGLES, mesh_handle.index_count, GL_UNSIGNED_INT, 0);
-	assert(glGetError() == GL_NO_ERROR);
-}
+
 
 
 

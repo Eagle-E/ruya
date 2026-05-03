@@ -46,12 +46,12 @@ namespace ruya::render
 	public:
 		enum class ShadingMode { SMOOTH, FLAT };
 
-		Renderer(Shader* shaderObjects, Shader* shaderLights, Window* window, Camera* camera);
+		Renderer(Shader* shader_objects, Shader* shader_lights, Window* window, Camera* camera);
 		~Renderer();
 		void render_scene(Scene& scene, Vault& vault);
-		void set_flat_shader(Shader* flatShader) { mFlatShaderObjects = flatShader; }
-		void set_shading_mode(ShadingMode mode) { mShadingMode = mode; }
-		ShadingMode shading_mode() const { return mShadingMode; }
+		void set_flat_shader(Shader* flatShader) { _shader_objects_flat = flatShader; }
+		void set_shading_mode(ShadingMode mode) { _shading_mode = mode; }
+		ShadingMode shading_mode() const { return _shading_mode; }
 
 		GPUVault gpu_vault;
 		const int TEXTURE_SLOT_DIFFUSE  = 0;
@@ -62,22 +62,17 @@ namespace ruya::render
 														const GLchar* message, const void* userParam);
 
 		void render_models(entt::registry& registry, Vault& vault, const mat4& VP, Shader& activeShader);
-		void render_model(Model& obj, const mat4& VP, const BasicLight& light, Shader * activeShader, Vault& vault);
-		void render_element(Element& obj, const mat4& VP, const BasicLight& light, Shader * activeShader, Vault& vault);
 		void render_light_source(BasicLight& light, const mat4& VP, Vault& vault, Model& model);
 		void draw_mesh(MeshID mesh, Vault& vault);
 
 		// MeshGPU buffer_mesh(const Mesh& mesh);
 		void unload_mesh(MeshGPU& mesh_gpu);
-		Shader* mSmoothShaderObjects;
-		Shader* mShaderLights;
-		Shader* mFlatShaderObjects;
-		Window* mWindow;
-		Camera* mCamera;
-		ShadingMode mShadingMode;
-
-		unordered_map<MeshID, MeshGPU> mMeshHandleMap;
-		// TextureSlotManager mSlotManager;
+		Shader* _shader_objects_smooth;
+		Shader* _shader_lights;
+		Shader* _shader_objects_flat;
+		Window* _window;
+		Camera* _camera;
+		ShadingMode _shading_mode;
 	};
 }
 

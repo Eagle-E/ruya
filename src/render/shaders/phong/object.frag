@@ -27,9 +27,9 @@ struct BasicLight
     is interpolated by previous shaders in the pipeline.
 */
 
-#define N_BASIC_LIGHTS 4
-uniform BasicLight simple_lights[N_BASIC_LIGHTS];
-uniform BasicLight simple_light;
+#define MAX_BASIC_LIGHTS 128
+uniform BasicLight simple_lights[MAX_BASIC_LIGHTS];
+uniform uint num_simple_lights;
 uniform Material material;
 uniform vec3 camera_position;
 
@@ -75,11 +75,8 @@ vec3 calc_simple_light(BasicLight light, Material material, vec3 position, vec3 
 void main()
 {
     vec3 normal = normalize(v_normal);
-    // vec3 result = calc_simple_light(simple_light, material, v_position, normal, v_uv, camera_position);
-    // FragColor = vec4(result, 1.0);
-
     vec3 result = vec3(0,0,0);
-    for (int i = 0; i < N_BASIC_LIGHTS; i++)
+    for (int i = 0; i < num_simple_lights; i++)
     {
         result += calc_simple_light(simple_lights[i], material, v_position, normal, v_uv, camera_position);
     }
