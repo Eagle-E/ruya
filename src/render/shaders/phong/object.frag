@@ -42,30 +42,27 @@ out vec4 FragColor;
 /* Compute fragment color imposed by given light.
 Args:
     - light: the light object whose effect we want to calculate
-    - material: material of the surface corresponsing with the fragment
+    - diffuse_sample: color sampled from the diffuse map corresponding with the fragment
+    - specular_sample: color sampled from the specular map corresponding with the fragment
     - position: frag pos in world space
     - normal: frag normal in world space
-    - uv: texture coords corresponding with the fragment
     - camera_position: cam pos in world space
 */
-vec3 calc_simple_light(BasicLight light, Material material, vec3 position, vec3 normal, vec2 uv, vec3 camera_position)
+vec3 calc_simple_light(BasicLight light, vec3 diffuse_sample, vec3 specular_sample, vec3 position, vec3 normal, vec3 camera_position)
 {
-    // preparatory stuff
-    vec3 albedo = texture(material.diffuse_map, uv).rgb;
-
     // ambient color
-    vec3 ambient = light.ambient * albedo.rgb;
+    vec3 ambient = light.ambient * diffuse_sample.rgb;
 
     // diffuse color
     vec3 light_dir = normalize(position - light.position);
     float diffuse_factor = max(dot(-light_dir, normal), 0.0);
-    vec3 diffuse = light.diffuse * diffuse_factor * material.diffuse * albedo;
+    vec3 diffuse = diffuse_factor * light.diffuse * material.diffuse * diffuse_sample;
 
     // specular component
     vec3 view_dir = normalize(position - camera_position);
     vec3 reflection_dir = reflect(light_dir, normal);
     float specular_effect = pow(max(dot(reflection_dir, -view_dir), 0.0), 32);
-    vec3 specular = light.specular * specular_effect * material.specular * texture(material.specular_map, uv).rgb; 
+    vec3 specular = specular_effect * light.specular * material.specular * specular_sample; 
 
     // final color
     vec3 result = ambient + diffuse + specular;
@@ -75,10 +72,13 @@ vec3 calc_simple_light(BasicLight light, Material material, vec3 position, vec3 
 void main()
 {
     vec3 normal = normalize(v_normal);
+    vec3 diffuse_sample = texture(material.diffuse_map, v_uv).rgb;
+    vec3 specular_sample = texture(material.specular_map, v_uv).rgb;
+
     vec3 result = vec3(0,0,0);
     for (int i = 0; i < num_simple_lights; i++)
     {
-        result += calc_simple_light(simple_lights[i], material, v_position, normal, v_uv, camera_position);
+        result += calc_simple_light(simple_lights[i], diffuse_sample, specular_sample, v_position, normal, camera_position);
     }
     FragColor = vec4(result, 1.0);
 
