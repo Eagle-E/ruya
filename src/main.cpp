@@ -24,6 +24,10 @@ int main()
 	{
 		app.run();
 	}
+	catch (const std::runtime_error& e)
+	{
+        std::cerr << "Runtime error: " << e.what() << '\n';
+    }
 	catch (std::exception e)
 	{
 		std::cerr << e.what() << std::endl;
