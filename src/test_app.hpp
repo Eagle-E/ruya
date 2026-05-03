@@ -54,6 +54,7 @@ using ruya::render::Shader;
 using ruya::render::Texture;		
 using ruya::scene::Element;
 using ruya::scene::BasicLight;
+using ruya::scene::DirectionalLight;
 using ruya::scene::Mesh;			
 using ruya::scene::MeshID;
 using ruya::scene::Model;
@@ -198,7 +199,7 @@ namespace ruya
 
             // LIGHT 2
             BasicLight light2 {
-                .position = vec3{(2-3.0f) * 2.5f, 1.0f, 3.0f},
+                .position = vec3{2.0f, 1.0f, 3.0f},
                 .ambient = vec3(0.2f, 0.2f, 0.2f),
                 .diffuse = vec3(0.7f, 0.7f, 0.7f),
                 .specular = vec3(1.0f, 1.0f, 1.0f),
@@ -216,6 +217,16 @@ namespace ruya
             auto light_entity2 = scene.registry.create();
             scene.registry.emplace<BasicLight>(light_entity2, light2);
             scene.registry.emplace<Model>(light_entity2, light_model2);
+
+            // LIGHT 3 
+            DirectionalLight light3 {
+                .direction = vec3{0.0f, -1.0f, 0.0f},
+                .ambient = vec3(0.2f, 0.2f, 0.2f),
+                .diffuse = vec3(0.7f, 0.7f, 0.7f),
+                .specular = vec3(1.0f, 1.0f, 1.0f),
+            };
+            auto light_entity3 = scene.registry.create();
+            scene.registry.emplace<DirectionalLight>(light_entity3, light3);
 
             // MAIN LOOP
             _frame_output_timer.start();

@@ -12,6 +12,7 @@
 #include "render/renderer.h"
 #include "render/texture.hpp"
 #include "scene/components.hpp"
+#include "scene/light.hpp"
 #include "scene/vault.hpp"
 #include "render/gpu_vault.hpp"
 
@@ -20,6 +21,8 @@ using ruya::render::resolve_mesh;
 using ruya::render::resolve_texture;
 using ruya::scene::Model;
 using ruya::scene::TextureID;
+using ruya::scene::BasicLight;
+using ruya::scene::DirectionalLight;
 using ruya::scene::Vault;
 using ruya::scene::materials::Phong;
 
@@ -75,23 +78,42 @@ void ruya::render::Renderer::render_scene(Scene& scene, Vault& vault)
 
 void ruya::render::Renderer::render_models(entt::registry& registry, Vault& vault, const mat4& VP, Shader& active_shader)
 {
-	// set the lights, as they're the same for all models
-	auto lights_view = registry.view<BasicLight>();
-	if (lights_view.size() > MAX_BASIC_LIGHTS)
+	//----- LIGHTS, as they're the same for all models
+	// basic lights
+	auto basic_lights_view = registry.view<BasicLight>();
+	if (basic_lights_view.size() > MAX_BASIC_LIGHTS)
 	{
-		std::string error_msg = std::format("Capacity Error: There are {} while the max capacity is {}.", lights_view.size(), MAX_BASIC_LIGHTS);
+		std::string error_msg = std::format("Capacity Error: There are {} basic lights while the max capacity is {}.", basic_lights_view.size(), MAX_BASIC_LIGHTS);
         throw std::out_of_range(error_msg);
 	}
 
-	for (int idx = 0; auto [entity, light] : lights_view.each())
+	for (int idx = 0; auto [entity, light] : basic_lights_view.each())
 	{
-		active_shader.set_vec3(std::format("simple_lights[{}].ambient", idx), light.ambient);
-		active_shader.set_vec3(std::format("simple_lights[{}].diffuse", idx), light.diffuse);
-		active_shader.set_vec3(std::format("simple_lights[{}].specular", idx), light.specular);
-		active_shader.set_vec3(std::format("simple_lights[{}].position", idx), light.position);
+		active_shader.set_vec3(std::format("basic_lights[{}].ambient", idx), light.ambient);
+		active_shader.set_vec3(std::format("basic_lights[{}].diffuse", idx), light.diffuse);
+		active_shader.set_vec3(std::format("basic_lights[{}].specular", idx), light.specular);
+		active_shader.set_vec3(std::format("basic_lights[{}].position", idx), light.position);
 		idx++;
 	}
-	active_shader.set_uint("num_simple_lights", lights_view.size());
+	active_shader.set_uint("num_basic_lights", basic_lights_view.size());
+
+	// directional lights
+	auto dir_lights_view = registry.view<DirectionalLight>();
+	if (dir_lights_view.size() > MAX_BASIC_LIGHTS)
+	{
+		std::string error_msg = std::format("Capacity Error: There are {} directional lights while the max capacity is {}.", dir_lights_view.size(), MAX_BASIC_LIGHTS);
+        throw std::out_of_range(error_msg);
+	}
+
+	for (int idx = 0; auto [entity, light] : dir_lights_view.each())
+	{
+		active_shader.set_vec3(std::format("dir_lights[{}].ambient", idx), light.ambient);
+		active_shader.set_vec3(std::format("dir_lights[{}].diffuse", idx), light.diffuse);
+		active_shader.set_vec3(std::format("dir_lights[{}].specular", idx), light.specular);
+		active_shader.set_vec3(std::format("dir_lights[{}].direction", idx), light.direction);
+		idx++;
+	}
+	active_shader.set_uint("num_dir_lights", dir_lights_view.size());
 
 
 	// camera stuff, same for all models
