@@ -1,6 +1,7 @@
 #include <list>
 #include <iostream>
 #include <format>
+#include <stdexcept>
 
 #include <entt/entt.hpp>
 #include <glm/glm.hpp>
@@ -76,17 +77,20 @@ void ruya::render::Renderer::render_models(entt::registry& registry, Vault& vaul
 {
 	// set the lights, as they're the same for all models
 	auto lights_view = registry.view<BasicLight>();
-	int idx = 0;
-	lights_view.each(
-		[&](auto entity, BasicLight& light)
-		{
-			active_shader.set_vec3(std::format("simple_lights[{}].ambient", idx), light.ambient);
-			active_shader.set_vec3(std::format("simple_lights[{}].diffuse", idx), light.diffuse);
-			active_shader.set_vec3(std::format("simple_lights[{}].specular", idx), light.specular);
-			active_shader.set_vec3(std::format("simple_lights[{}].position", idx), light.position);
-			idx++;
-		}
-	);
+	if (lights_view.size() > MAX_BASIC_LIGHTS)
+	{
+		std::string error_msg = std::format("Capacity Error: There are {} while the max capacity is {}.", lights_view.size(), MAX_BASIC_LIGHTS);
+        throw std::out_of_range(error_msg);
+	}
+
+	for (int idx = 0; auto [entity, light] : lights_view.each())
+	{
+		active_shader.set_vec3(std::format("simple_lights[{}].ambient", idx), light.ambient);
+		active_shader.set_vec3(std::format("simple_lights[{}].diffuse", idx), light.diffuse);
+		active_shader.set_vec3(std::format("simple_lights[{}].specular", idx), light.specular);
+		active_shader.set_vec3(std::format("simple_lights[{}].position", idx), light.position);
+		idx++;
+	}
 	active_shader.set_uint("num_simple_lights", lights_view.size());
 
 

@@ -56,6 +56,7 @@ namespace ruya::render
 		GPUVault gpu_vault;
 		const int TEXTURE_SLOT_DIFFUSE  = 0;
 		const int TEXTURE_SLOT_SPECULAR = 1;
+		const int MAX_BASIC_LIGHTS = 128;
 
 	private:
 		static void GLAPIENTRY debug_mesage_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, 

@@ -175,7 +175,7 @@ namespace ruya
                 scene.registry.emplace<Model>(entity, model);
             }
             
-            
+            // LIGHT 1
             BasicLight light {
                 .position = vec3{(2-3.0f) * 2.5f, 1.0f, 3.0f},
                 .ambient = vec3(0.2f, 0.2f, 0.2f),
@@ -196,8 +196,29 @@ namespace ruya
             scene.registry.emplace<BasicLight>(light_entity, light);
             scene.registry.emplace<Model>(light_entity, light_model);
 
+            // LIGHT 2
+            BasicLight light2 {
+                .position = vec3{(2-3.0f) * 2.5f, 1.0f, 3.0f},
+                .ambient = vec3(0.2f, 0.2f, 0.2f),
+                .diffuse = vec3(0.7f, 0.7f, 0.7f),
+                .specular = vec3(1.0f, 1.0f, 1.0f),
+            };
+            Model light_model2;
+            light_model2.elements.push_back(
+                Element{
+                    .mesh = vault.mesh_cache["gen::cube"],
+                    .material = Phong{},
+                    .transform = Transform{
+                        .position = vec3{2.0f, 1.0f, 3.0f},
+                    }
+                }
+            );
+            auto light_entity2 = scene.registry.create();
+            scene.registry.emplace<BasicLight>(light_entity2, light2);
+            scene.registry.emplace<Model>(light_entity2, light_model2);
+
+            // MAIN LOOP
             _frame_output_timer.start();
-            
             while (!_window.should_close())
             {
                 _frame_timer.start();
