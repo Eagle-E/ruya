@@ -30,17 +30,36 @@ struct DirectionalLight
     vec3 direction;  
 };
 
+struct PointLight 
+{    
+    vec3 position;
+    
+    float constant;
+    float linear;
+    float quadratic;  
+
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+}; 
+
 /*
 `v_` prefix denotes a "varying" variable, meaning its value 
     is interpolated by previous shaders in the pipeline.
 */
 
-#define MAX_BASIC_LIGHTS 16
-#define MAX_DIRECTIONAL_LIGHTS 8
+#define MAX_BASIC_LIGHTS 8
+#define MAX_DIRECTIONAL_LIGHTS 4
+#define MAX_POINT_LIGHTS 32
+
 uniform BasicLight basic_lights[MAX_BASIC_LIGHTS];
 uniform DirectionalLight dir_lights[MAX_DIRECTIONAL_LIGHTS];
+uniform PointLight point_lights[MAX_POINT_LIGHTS];
+
 uniform uint num_basic_lights;
 uniform uint num_dir_lights;
+uniform uint num_point_lights;
+
 uniform Material material;
 uniform vec3 camera_position;
 
@@ -99,6 +118,30 @@ vec3 calc_directional_light(DirectionalLight light, vec3 diffuse_sample, vec3 sp
     return result;
 }
 
+vec3 calc_point_light(PointLight light, vec3 diffuse_sample, vec3 specular_sample, vec3 position, vec3 normal, vec3 view_dir)
+{
+    // attenuation
+    float d = distance(light.position, position);
+    float attenuation = 1 / (light.constant + light.linear * d + light.quadratic * d * d);
+
+    // ambient color
+    vec3 ambient = light.ambient * diffuse_sample.rgb;
+
+    // diffuse color
+    vec3 light_dir = normalize(position - light.position);
+    float diffuse_factor = max(dot(-light_dir, normal), 0.0);
+    vec3 diffuse = diffuse_factor * light.diffuse * material.diffuse * diffuse_sample;
+
+    // specular component
+    vec3 reflection_dir = reflect(light_dir, normal);
+    float specular_effect = pow(max(dot(reflection_dir, -view_dir), 0.0), 32);
+    vec3 specular = specular_effect * light.specular * material.specular * specular_sample; 
+
+    // final color
+    vec3 result = attenuation * (ambient + diffuse + specular);
+    return result;
+}
+
 void main()
 {
     vec3 normal = normalize(v_normal);
@@ -111,6 +154,11 @@ void main()
     for (int i = 0; i < num_dir_lights; i++)
     {
         result += calc_directional_light(dir_lights[i], diffuse_sample, specular_sample, v_position, normal, view_dir);
+    }
+
+    for (int i = 0; i < num_point_lights; i++)
+    {
+        result += calc_point_light(point_lights[i], diffuse_sample, specular_sample, v_position, normal, view_dir);
     }
 
     for (int i = 0; i < num_basic_lights; i++)

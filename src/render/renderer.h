@@ -56,15 +56,16 @@ namespace ruya::render
 		GPUVault gpu_vault;
 		const int TEXTURE_SLOT_DIFFUSE  = 0;
 		const int TEXTURE_SLOT_SPECULAR = 1;
-		const int MAX_BASIC_LIGHTS = 16;
-		const int MAX_DIRECTIONAL_LIGHTS = 8;
+		const int MAX_BASIC_LIGHTS = 8;
+		const int MAX_DIRECTIONAL_LIGHTS = 4;
+		const int MAX_POINT_LIGHTS = 32;
 
 	private:
 		static void GLAPIENTRY debug_mesage_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, 
 														const GLchar* message, const void* userParam);
 
 		void render_models(entt::registry& registry, Vault& vault, const mat4& VP, Shader& activeShader);
-		void render_light_source(BasicLight& light, const mat4& VP, Vault& vault, Model& model);
+		void render_light_source(vec3 position, vec3 color, Model& model, const mat4& VP, Vault& vault);
 		void draw_mesh(MeshID mesh, Vault& vault);
 
 		// MeshGPU buffer_mesh(const Mesh& mesh);

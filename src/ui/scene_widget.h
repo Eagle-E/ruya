@@ -16,6 +16,7 @@
 using ruya::scene::Scene;
 using ruya::scene::Model;
 using ruya::scene::BasicLight;
+using ruya::scene::PointLight;
 using ruya::scene::DirectionalLight;
 
 
@@ -47,6 +48,14 @@ void scene_widget(Scene& scene)
                 ruya::ui::light_widget(light_id, basic_light, model);
             }
 
+            auto point_light_view = scene.registry.view<PointLight>();
+	        for (auto [light_entity, point_light] : point_light_view.each())
+            {
+                Model* model = scene.registry.try_get<Model>(light_entity);
+                int light_id = static_cast<int>(light_entity);
+                ruya::ui::light_widget(light_id, point_light, model);
+            }
+
             auto lights_view_directional = scene.registry.view<DirectionalLight>();
 	        for (auto [light_entity, dir_light] : lights_view_directional.each())
             {
@@ -60,11 +69,10 @@ void scene_widget(Scene& scene)
         // standard objects
         if(ImGui::TreeNode("Models"))
         {
-            auto models_view = scene.registry.view<Model>(entt::exclude<BasicLight>);
-            for (entt::entity model_entity : models_view)
+            auto model_view = scene.registry.view<Model>(entt::exclude<BasicLight, PointLight, DirectionalLight>);
+            for (auto [entity, model] : model_view.each())
             {
-                Model& model = models_view.get<Model>(model_entity);
-                int model_id = static_cast<int>(model_entity);
+                int model_id = static_cast<int>(entity);
                 auto label = std::format("Model {}", model_id);
                 ruya::ui::model_widget(model, label);
             }

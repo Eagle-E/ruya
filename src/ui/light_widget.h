@@ -12,11 +12,13 @@
 
 using ruya::scene::BasicLight;
 using ruya::scene::DirectionalLight;
+using ruya::scene::PointLight;
 
 namespace
 {
     void basic_light_settings(ruya::scene::BasicLight& light)
     {
+        ruya::ui::vec3_widget(light.position, 0.1f, "position");
         ImGui::PushID("ambient");
         ruya::ui::color_widget(light.ambient, "ambient");
         ImGui::PopID();
@@ -39,6 +41,29 @@ namespace
         ImGui::PopID();
         ImGui::PushID("specular");
         ruya::ui::color_widget(light.specular, "specular");
+        ImGui::PopID();
+    }
+
+    void point_light_settings(ruya::scene::PointLight& light)
+    {
+        ruya::ui::vec3_widget(light.position, 0.1f, "position");
+        ImGui::PushID("ambient");
+        ruya::ui::color_widget(light.ambient, "ambient");
+        ImGui::PopID();
+        ImGui::PushID("diffuse");
+        ruya::ui::color_widget(light.diffuse, "diffuse");
+        ImGui::PopID();
+        ImGui::PushID("specular");
+        ruya::ui::color_widget(light.specular, "specular");
+        ImGui::PopID();
+        ImGui::PushID("constant");
+        ruya::ui::float_widget(light.constant, 0.05f, "constant");
+        ImGui::PopID();
+        ImGui::PushID("linear");
+        ruya::ui::float_widget(light.linear, 0.01f, "linear");
+        ImGui::PopID();
+        ImGui::PushID("quadratic");
+        ruya::ui::float_widget(light.quadratic, 0.0025f, "quadratic");
         ImGui::PopID();
     }
     
@@ -64,15 +89,6 @@ namespace ruya::ui
             {
                 Model& model_ref = *model;
                 model_widget(model_ref, std::string("model"));
-                
-                // TODO: update if Model gets its own Transform variable
-                // update light position to be the avg of element positions
-                light.position = glm::vec3(0.0f);
-                for (auto element : model_ref.elements)
-                {
-                    light.position += element.transform.position;
-                }
-                light.position /= model_ref.elements.size();
             }
             ImGui::TreePop();
         }
@@ -87,6 +103,24 @@ namespace ruya::ui
         if (ImGui::TreeNode(label.c_str()))
         {
             directional_light_settings(light);
+            ImGui::TreePop();
+        }
+        ImGui::PopID();
+    }
+
+    void light_widget(int id, PointLight& light, Model* model)
+    {
+        ImGui::PushID(id);
+
+        std::string label = std::format("Point Light {}", id);
+        if (ImGui::TreeNode(label.c_str()))
+        {
+            point_light_settings(light);
+            if (model != nullptr)
+            {
+                Model& model_ref = *model;
+                model_widget(model_ref, std::string("model"));
+            }
             ImGui::TreePop();
         }
         ImGui::PopID();

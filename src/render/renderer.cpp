@@ -23,6 +23,7 @@ using ruya::scene::Model;
 using ruya::scene::TextureID;
 using ruya::scene::BasicLight;
 using ruya::scene::DirectionalLight;
+using ruya::scene::PointLight;
 using ruya::scene::Vault;
 using ruya::scene::materials::Phong;
 
@@ -69,9 +70,14 @@ void ruya::render::Renderer::render_scene(Scene& scene, Vault& vault)
 
 	// LIGHT SOURCES
 	_shader_lights->use();
-	auto lights_with_model_view = scene.registry.view<BasicLight, Model>();
-	lights_with_model_view.each([&](auto entity, BasicLight& light, Model& model) {
-		render_light_source(light, VP, vault, model);
+	auto basic_lights_with_model_view = scene.registry.view<BasicLight, Model>();
+	basic_lights_with_model_view.each([&](auto entity, BasicLight& light, Model& model) {
+		render_light_source(light.position, light.diffuse, model, VP, vault);
+	});
+
+	auto point_lights_with_model_view = scene.registry.view<PointLight, Model>();
+	point_lights_with_model_view.each([&](auto entity, PointLight& light, Model& model) {
+		render_light_source(light.position, light.diffuse, model, VP, vault);
 	});
 }
 
@@ -116,11 +122,33 @@ void ruya::render::Renderer::render_models(entt::registry& registry, Vault& vaul
 	active_shader.set_uint("num_dir_lights", dir_lights_view.size());
 
 
+	// point lights
+	auto point_lights_view = registry.view<PointLight>();
+	if (point_lights_view.size() > MAX_POINT_LIGHTS)
+	{
+		std::string error_msg = std::format("Capacity Error: There are {} point lights while the max capacity is {}.", point_lights_view.size(), MAX_POINT_LIGHTS);
+        throw std::out_of_range(error_msg);
+	}
+
+	for (int idx = 0; auto [entity, light] : point_lights_view.each())
+	{
+		active_shader.set_vec3(std::format("point_lights[{}].ambient", idx), light.ambient);
+		active_shader.set_vec3(std::format("point_lights[{}].diffuse", idx), light.diffuse);
+		active_shader.set_vec3(std::format("point_lights[{}].specular", idx), light.specular);
+		active_shader.set_vec3(std::format("point_lights[{}].position", idx), light.position);
+		active_shader.set_float(std::format("point_lights[{}].constant", idx), light.constant);
+		active_shader.set_float(std::format("point_lights[{}].linear", idx), light.linear);
+		active_shader.set_float(std::format("point_lights[{}].quadratic", idx), light.quadratic);
+		idx++;
+	}
+	active_shader.set_uint("num_point_lights", point_lights_view.size());
+
+
 	// camera stuff, same for all models
 	active_shader.set_vec3("camera_position", _camera->position());
 
 	// render the models
-	auto model_view = registry.view<Model>(entt::exclude<BasicLight>);
+	auto model_view = registry.view<Model>(entt::exclude<BasicLight, PointLight, DirectionalLight>);
 	for (auto [entity, model] : model_view.each())
 	{
 		for (auto & elem : model.elements)
@@ -158,21 +186,16 @@ void ruya::render::Renderer::render_models(entt::registry& registry, Vault& vaul
 }
 
 
-void ruya::render::Renderer::render_light_source(
-	BasicLight& light,
-	const mat4& VP,
-	Vault& vault,
-	Model& model
-)
+void ruya::render::Renderer::render_light_source(vec3 position, vec3 color, Model& model, const mat4& VP, Vault& vault)
 {
-	_shader_lights->set_vec3("obj_color", light.diffuse);
+	_shader_lights->set_vec3("obj_color", color);
 	
 	for (const Element& element : model.elements)
 	{
 		// TODO: remove `position` member var from light
 		// edge case: light has model.transform component but also a separate vec3 position.
 		Transform T = element.transform;
-		T.position += light.position;
+		T.position += position;
 
 		mat4 M = ruya::math::model_matrix(T);
 		_shader_lights->set_mat4("M", M);

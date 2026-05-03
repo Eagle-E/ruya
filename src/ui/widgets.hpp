@@ -47,6 +47,11 @@ namespace ruya::ui
     {
         ImGui::DragFloat3(label.c_str(), &vec.x, step);
     }
+
+    inline void float_widget(float & f, float step = 1.0f, const std::string& label = {})
+    {
+        ImGui::DragFloat(label.c_str(), &f, step);
+    }
 }
 
 
