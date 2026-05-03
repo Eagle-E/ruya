@@ -22,7 +22,6 @@ namespace ruya::scene
 	struct DirectionalLight
 	{
 		vec3 direction {0.0f, -1.0f, 0.0f};
-  
 		vec3 ambient {1.0f};
 		vec3 diffuse {1.0f};
 		vec3 specular {1.0f};

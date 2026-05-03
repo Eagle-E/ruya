@@ -10,10 +10,12 @@
 #include "ui/model_widget.h"
 #include "ui/widgets.hpp"
 
+using ruya::scene::BasicLight;
+using ruya::scene::DirectionalLight;
 
 namespace
 {
-    void light_settings(ruya::scene::BasicLight& light)
+    void basic_light_settings(ruya::scene::BasicLight& light)
     {
         ImGui::PushID("ambient");
         ruya::ui::color_widget(light.ambient, "ambient");
@@ -25,6 +27,21 @@ namespace
         ruya::ui::color_widget(light.specular, "specular");
         ImGui::PopID();
     }
+
+    void directional_light_settings(ruya::scene::DirectionalLight& light)
+    {
+        ruya::ui::vec3_widget(light.direction, 0.1f, "direction");
+        ImGui::PushID("ambient");
+        ruya::ui::color_widget(light.ambient, "ambient");
+        ImGui::PopID();
+        ImGui::PushID("diffuse");
+        ruya::ui::color_widget(light.diffuse, "diffuse");
+        ImGui::PopID();
+        ImGui::PushID("specular");
+        ruya::ui::color_widget(light.specular, "specular");
+        ImGui::PopID();
+    }
+    
 } 
 
 
@@ -39,10 +56,10 @@ namespace ruya::ui
     {
         ImGui::PushID(id);
 
-        std::string label = std::format("Light {}", id);
+        std::string label = std::format("Basic Light {}", id);
         if (ImGui::TreeNode(label.c_str()))
         {
-            light_settings(light);
+            basic_light_settings(light);
             if (model != nullptr)
             {
                 Model& model_ref = *model;
@@ -57,6 +74,19 @@ namespace ruya::ui
                 }
                 light.position /= model_ref.elements.size();
             }
+            ImGui::TreePop();
+        }
+        ImGui::PopID();
+    }
+
+    void light_widget(int id, DirectionalLight& light)
+    {
+        ImGui::PushID(id);
+
+        std::string label = std::format("Dir Light {}", id);
+        if (ImGui::TreeNode(label.c_str()))
+        {
+            directional_light_settings(light);
             ImGui::TreePop();
         }
         ImGui::PopID();

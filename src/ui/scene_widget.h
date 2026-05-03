@@ -15,6 +15,9 @@
 
 using ruya::scene::Scene;
 using ruya::scene::Model;
+using ruya::scene::BasicLight;
+using ruya::scene::DirectionalLight;
+
 
 namespace ruya::ui
 {
@@ -35,14 +38,22 @@ void scene_widget(Scene& scene)
         // light emitting entities
         if(ImGui::TreeNode("Lights"))
         {
-            auto lights_view = scene.registry.view<BasicLight>();
-            for (entt::entity light_entity : lights_view)
+            auto lights_view_basic = scene.registry.view<BasicLight>();
+            for (entt::entity light_entity : lights_view_basic)
             {
-                BasicLight& light = lights_view.get<BasicLight>(light_entity);
+                BasicLight& basic_light = lights_view_basic.get<BasicLight>(light_entity);
                 Model* model = scene.registry.try_get<Model>(light_entity);
                 int light_id = static_cast<int>(light_entity);
-                ruya::ui::light_widget(light_id, light, model);
+                ruya::ui::light_widget(light_id, basic_light, model);
             }
+
+            auto lights_view_directional = scene.registry.view<DirectionalLight>();
+	        for (auto [light_entity, dir_light] : lights_view_directional.each())
+            {
+                int light_id = static_cast<int>(light_entity);
+                ruya::ui::light_widget(light_id, dir_light);
+            }
+            
             ImGui::TreePop();
         }
 
