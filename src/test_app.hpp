@@ -52,10 +52,12 @@ using ruya::Timer;
 using ruya::render::Renderer;
 using ruya::render::Shader;
 using ruya::render::Texture;		
-using ruya::scene::Element;
-using ruya::scene::LightBasic;
+using ruya::scene::BasicLight;
+using ruya::scene::DirectionalLight;
+using ruya::scene::PointLight;
 using ruya::scene::Mesh;			
 using ruya::scene::MeshID;
+using ruya::scene::Element;
 using ruya::scene::Model;
 using ruya::scene::Scene;
 using ruya::scene::TextureID;
@@ -175,11 +177,12 @@ namespace ruya
                 scene.registry.emplace<Model>(entity, model);
             }
             
-            
-            LightBasic light {
-                .ambient = vec3(0.2f, 0.2f, 0.2f),
-                .diffuse = vec3(0.7f, 0.7f, 0.7f),
-                .specular = vec3(1.0f, 1.0f, 1.0f)
+            // LIGHT 1
+            BasicLight light {
+                .position = vec3{(2-3.0f) * 2.5f, 1.0f, 3.0f},
+                .ambient = vec3(0),
+                .diffuse = vec3(0.8f, 0.99f, 0.6f),
+                .specular = vec3(1.0f, 1.0f, 1.0f),
             };
             Model light_model;
             light_model.elements.push_back(
@@ -188,17 +191,73 @@ namespace ruya
                 }
             );
             auto light_entity = scene.registry.create();
-            scene.registry.emplace<LightBasic>(light_entity, light);
+            scene.registry.emplace<BasicLight>(light_entity, light);
             scene.registry.emplace<Model>(light_entity, light_model);
 
-            _frame_output_timer.start();
+            // LIGHT 2
+            BasicLight light2 {
+                .position = vec3{2.0f, 1.0f, 3.0f},
+                .ambient = vec3(0),
+                .diffuse = vec3(0.6f, 0.8f, 0.99f),
+                .specular = vec3(1.0f, 1.0f, 1.0f),
+            };
+            Model light_model2;
+            light_model2.elements.push_back(
+                Element{
+                    .mesh = vault.mesh_cache["gen::cube"],
+                }
+            );
+            auto light_entity2 = scene.registry.create();
+            scene.registry.emplace<BasicLight>(light_entity2, light2);
+            scene.registry.emplace<Model>(light_entity2, light_model2);
+
+            // LIGHT 3 - directional light
+            DirectionalLight light3 {
+                .direction = vec3{0.0f, -1.0f, 0.0f},
+                .ambient = vec3(0.2f, 0.2f, 0.2f),
+                .diffuse = vec3(0.0f, 0.0f, 0.0f),
+                .specular = vec3(0.0f, 0.0f, 0.0f),
+            };
+            auto light_entity3 = scene.registry.create();
+            scene.registry.emplace<DirectionalLight>(light_entity3, light3);
+
+            // LIGHT 4 - directional light
+            PointLight point_light_0 {
+                .position {1.0f, 1.0f, 1.0f},
+                .constant = 1.0f,
+                .linear = 0.14f,
+                .quadratic = 0.07f,
+                .ambient {0.0f},
+                .diffuse {1.0f},
+                .specular {1.0f}
+            };
+            Model point_light_0_model
+            {
+                .elements = {
+                    Element{
+                        .mesh = vault.mesh_cache["gen::cube"],
+                        .material = Phong{},
+                        .transform = Transform{
+                            .position = vec3{0},
+                            .rotation = vec3(0),
+                            .scale = vec3(.15f)
+                        }
+                    }
+                }
+            };
+            auto point_light_entity_0 = scene.registry.create();
+            scene.registry.emplace<PointLight>(point_light_entity_0, point_light_0);
+            scene.registry.emplace<Model>(point_light_entity_0, point_light_0_model);
             
+
+            // MAIN LOOP
+            _frame_output_timer.start();
             while (!_window.should_close())
             {
                 _frame_timer.start();
 
                 // move the light around
-                scene.registry.get<LightBasic>(light_entity).position = {cos(glfwGetTime()) * 7.5f, 5.0f, 3.0f};
+                // scene.registry.get<BasicLight>(light_entity).position = {cos(glfwGetTime()) * 7.5f, 5.0f, 3.0f};
 
                 // prepare ui
                 ImGui_ImplOpenGL3_NewFrame();
@@ -208,7 +267,7 @@ namespace ruya
                     // In your ImGui window:
                     ImGui::Begin("Settings");
                     {
-                        ruya::ui::scene_widget(scene);
+                        ruya::ui::scene_widget(scene, vault);
                     }
                     ImGui::End();
                 }

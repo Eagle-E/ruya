@@ -111,9 +111,14 @@ void ruya::render::Shader::use()
 	glUseProgram(_program_id);
 }
 
-void ruya::render::Shader::set_int(const std::string& uniform_name, int value)
+void ruya::render::Shader::set_int(const std::string& uniform_name, int32_t value)
 {
 	glUniform1i(glGetUniformLocation(_program_id, uniform_name.c_str()), value);
+}
+
+void ruya::render::Shader::set_uint(const std::string& uniform_name, uint32_t value)
+{
+	glUniform1ui(glGetUniformLocation(_program_id, uniform_name.c_str()), value);
 }
 
 void ruya::render::Shader::set_mat4(const std::string& uniform_name, const glm::mat4& matrix)

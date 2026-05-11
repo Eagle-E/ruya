@@ -28,7 +28,8 @@ namespace ruya::render
 		void use();
 
 		// UNIFORMS
-		void set_int(const std::string& uniform_name, int value);
+		void set_int(const std::string& uniform_name, int32_t value);
+		void set_uint(const std::string& uniform_name, uint32_t value);
 		void set_float(const std::string& uniform_name, float value);
 		void set_vec3(const std::string& uniform_name, const glm::vec3& vec);
 		void set_vec3(const std::string& uniform_name, float x, float y, float z);

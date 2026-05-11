@@ -42,6 +42,16 @@ namespace ruya::ui
         vec.y = im_rgb.y;
         vec.z = im_rgb.z;
     }
+
+    inline void vec3_widget(vec3 & vec, float step = 1.0f, const std::string& label = {})
+    {
+        ImGui::DragFloat3(label.c_str(), &vec.x, step);
+    }
+
+    inline void float_widget(float & f, float step = 1.0f, const std::string& label = {})
+    {
+        ImGui::DragFloat(label.c_str(), &f, step);
+    }
 }
 
 

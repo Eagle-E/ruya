@@ -56,16 +56,11 @@ namespace ruya::ui
     {
         ImGui::PushID(label.c_str());
 
-        for (auto [i, elem] : std::views::enumerate(model.elements))
+        // TODO WARNING: if the list of elements is mutated, the ui won't be in sync!!!
+        if (ImGui::TreeNode(label.c_str()))
         {
-            // TODO WARNING: if the list of elements is mutated, the ui won't be in sync!!!
-            std::string element_id = std::format("Element {}-{}", label, i);
-            
-            if (ImGui::TreeNode(element_id.c_str()))
-            {
-                element_list_settings(model.elements);
-                ImGui::TreePop();
-            }
+            element_list_settings(model.elements);
+            ImGui::TreePop();
         }
 
         ImGui::PopID();

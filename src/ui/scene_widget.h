@@ -9,17 +9,23 @@
 #include "scene/components.hpp"
 
 #include "scene/scene.hpp"
+#include "scene/vault.hpp"
 #include "ui/model_widget.h"
 #include "ui/light_widget.h"
 #include "ui/widgets.hpp"
 
 using ruya::scene::Scene;
+using ruya::scene::Vault;
 using ruya::scene::Model;
+using ruya::scene::BasicLight;
+using ruya::scene::PointLight;
+using ruya::scene::DirectionalLight;
+
 
 namespace ruya::ui
 {
 
-void scene_widget(Scene& scene)
+void scene_widget(Scene& scene, Vault& vault)
 {
     ImGui::PushID("SceneWidget");
 
@@ -35,25 +41,71 @@ void scene_widget(Scene& scene)
         // light emitting entities
         if(ImGui::TreeNode("Lights"))
         {
-            auto lights_view = scene.registry.view<LightBasic>();
-            for (entt::entity light_entity : lights_view)
+            auto lights_view_basic = scene.registry.view<BasicLight>();
+            for (entt::entity light_entity : lights_view_basic)
             {
-                LightBasic& light = lights_view.get<LightBasic>(light_entity);
+                BasicLight& basic_light = lights_view_basic.get<BasicLight>(light_entity);
                 Model* model = scene.registry.try_get<Model>(light_entity);
                 int light_id = static_cast<int>(light_entity);
-                ruya::ui::light_widget(light_id, light, model);
+                ruya::ui::light_widget(light_id, basic_light, model);
             }
+
+            auto point_light_view = scene.registry.view<PointLight>();
+	        for (auto [light_entity, point_light] : point_light_view.each())
+            {
+                Model* model = scene.registry.try_get<Model>(light_entity);
+                int light_id = static_cast<int>(light_entity);
+                ruya::ui::light_widget(light_id, point_light, model);
+            }
+
+            auto lights_view_directional = scene.registry.view<DirectionalLight>();
+	        for (auto [light_entity, dir_light] : lights_view_directional.each())
+            {
+                int light_id = static_cast<int>(light_entity);
+                ruya::ui::light_widget(light_id, dir_light);
+            }
+            
+            // buttons to create lights
+            if (ImGui::Button("Create Point Light"))
+            {
+                PointLight point_light {
+                    .position {1.0f, 1.0f, 1.0f},
+                    .constant = 1.0f,
+                    .linear = 0.14f,
+                    .quadratic = 0.07f,
+                    .ambient {0.0f},
+                    .diffuse {1.0f},
+                    .specular {1.0f}
+                };
+                Model point_light_model
+                {
+                    .elements = {
+                        Element{
+                            .mesh = vault.mesh_cache["gen::cube"],
+                            .material = Phong{},
+                            .transform = Transform{
+                                .position = vec3{0},
+                                .rotation = vec3(0),
+                                .scale = vec3(.15f)
+                            }
+                        }
+                    }
+                };
+                auto point_light_entity = scene.registry.create();
+                scene.registry.emplace<PointLight>(point_light_entity, point_light);
+                scene.registry.emplace<Model>(point_light_entity, point_light_model);
+            }
+
             ImGui::TreePop();
         }
 
         // standard objects
         if(ImGui::TreeNode("Models"))
         {
-            auto models_view = scene.registry.view<Model>(entt::exclude<LightBasic>);
-            for (entt::entity model_entity : models_view)
+            auto model_view = scene.registry.view<Model>(entt::exclude<BasicLight, PointLight, DirectionalLight>);
+            for (auto [entity, model] : model_view.each())
             {
-                Model& model = models_view.get<Model>(model_entity);
-                int model_id = static_cast<int>(model_entity);
+                int model_id = static_cast<int>(entity);
                 auto label = std::format("Model {}", model_id);
                 ruya::ui::model_widget(model, label);
             }
