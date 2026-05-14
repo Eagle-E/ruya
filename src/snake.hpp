@@ -1,5 +1,18 @@
-#ifndef TEST_APP_H
-#define TEST_APP_H
+#ifndef SNAKE_H
+#define SNAKE_H
+
+/* Notes when making the snake game
+
+
+- Wanted 2 functions head() and body() which would create a new Model instance 
+    for the head and body part of the snake. However, access to the vault is needed
+    along with the mesh and material IDs.
+    => provide global access to vault?
+
+
+
+*/
+
 
 #include <iostream>
 #include <fstream>
@@ -9,6 +22,7 @@
 #include <filesystem>
 #include <format>
 #include <utility>
+#include <vector>
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -66,11 +80,44 @@ using ruya::scene::Vault;
 using ruya::scene::materials::Phong;
 using ruya::scene::materials::PhongMaterials;
 
-namespace ruya
+namespace
 {
     enum class RenderMode { FILL, WIREFRAME };
 
-    class TestApp : public App
+    namespace Key {
+        inline constexpr int A = GLFW_KEY_A;
+        inline constexpr int B = GLFW_KEY_B;
+        inline constexpr int C = GLFW_KEY_C;
+        inline constexpr int D = GLFW_KEY_D;
+        inline constexpr int E = GLFW_KEY_E;
+        inline constexpr int F = GLFW_KEY_F;
+        inline constexpr int G = GLFW_KEY_G;
+        inline constexpr int H = GLFW_KEY_H;
+        inline constexpr int I = GLFW_KEY_I;
+        inline constexpr int J = GLFW_KEY_J;
+        inline constexpr int K = GLFW_KEY_K;
+        inline constexpr int L = GLFW_KEY_L;
+        inline constexpr int M = GLFW_KEY_M;
+        inline constexpr int N = GLFW_KEY_N;
+        inline constexpr int O = GLFW_KEY_O;
+        inline constexpr int P = GLFW_KEY_P;
+        inline constexpr int Q = GLFW_KEY_Q;
+        inline constexpr int R = GLFW_KEY_R;
+        inline constexpr int S = GLFW_KEY_S;
+        inline constexpr int T = GLFW_KEY_T;
+        inline constexpr int U = GLFW_KEY_U;
+        inline constexpr int V = GLFW_KEY_V;
+        inline constexpr int W = GLFW_KEY_W;
+        inline constexpr int X = GLFW_KEY_X;
+        inline constexpr int Y = GLFW_KEY_Y;
+        inline constexpr int Z = GLFW_KEY_Z;
+    }
+}
+
+namespace ruya
+{
+
+    class Snake : public App
     {
     private: // VARIABLES
         Camera _camera;
@@ -82,6 +129,10 @@ namespace ruya
         bool _allow_render_mode_change = true;
         RenderMode _render_mode = RenderMode::FILL;
         Renderer* _renderer;
+        Vault _vault;
+        Scene _scene;
+        Model _snake_body_part;
+        std::vector<entt::entity> _snek;
 
     public: // FUNCTIONS
 
@@ -123,11 +174,13 @@ namespace ruya
             renderer.set_flat_shader(&shader_flat);
             _renderer = &renderer;
             std::cout << "Init renderer" << std::endl;
+            
 
 			// the object to render
             // ruya::render::print_max_texture_units_info();
             
-            auto [scene, vault] = make_sample_scene();
+            init_scene(_scene);
+            _camera.set_position(vec3{5, 5, 17.5f});
         	ruya::ui::initialize(_window.get_GLFW_window());
 
             // MAIN LOOP
@@ -139,12 +192,12 @@ namespace ruya
                 // prepare ui
                 ruya::ui::new_frame();
                 {
-                    ruya::ui::settings_pane(scene, vault);
+                    ruya::ui::settings_pane(_scene, _vault);
                 }
                 
 				// RENDER!!!
-                clear_frame_buffer(scene.background_color);
-                renderer.render_scene(scene, vault);
+                clear_frame_buffer(_scene.background_color);
+                renderer.render_scene(_scene, _vault);
                 ruya::ui::render_frame();
 
                 // update frame => swaps buffers = starts showing newly rendered buffer
@@ -162,136 +215,123 @@ namespace ruya
         }
 
 
-        std::pair<Scene, Vault> make_sample_scene()
+
+        void init_scene(Scene& scene)
         {
             std::cout << "Initializing Scene" << std::endl;
 
-            Vault vault;
 
 			fs::path texPathBarrelColor {ruya::io::DIR_RESOURCES / "barrel" / "barrel_color.png"};
 			fs::path texPathBarrelSpecular {ruya::io::DIR_RESOURCES / "barrel" / "barrel_specular.png"};
 			fs::path texPathEmojiColor {ruya::io::DIR_RESOURCES / "emoji" / "emoji_color.png"};
-            ImageID barrel_img_id_color = vault.load_image(texPathBarrelColor);
-            ImageID barrel_img_id_specular = vault.load_image(texPathBarrelSpecular);
-            ImageID emoji_img_id = vault.load_image(texPathEmojiColor);
-            vault.add_mesh(gen::cube(), "gen::cube");
-            vault.add_mesh(gen::square(), "gen::square");
-            vault.add_mesh(gen::icosahedron(), "gen::icosahedron");
-            vault.add_mesh(gen::icosphere(), "gen::icosphere");
+            ImageID barrel_img_id_color = _vault.load_image(texPathBarrelColor);
+            ImageID barrel_img_id_specular = _vault.load_image(texPathBarrelSpecular);
+            ImageID emoji_img_id = _vault.load_image(texPathEmojiColor);
+            _vault.add_mesh(gen::cube(), "gen::cube");
+            _vault.add_mesh(gen::square(), "gen::square");
+            _vault.add_mesh(gen::icosahedron(), "gen::icosahedron");
+            _vault.add_mesh(gen::icosphere(), "gen::icosphere");
 			std::cout << "Init textures" << std::endl;
 
-            Scene scene;
             scene.background_color = vec3(.1f, .1f, .1f);
 
-            // add cubes in a line
-            int n_cubes = 5;
-            for (size_t i = 0; i < n_cubes; i++)
-            {
-                auto entity = scene.registry.create();
-                Model model;
-                model.elements.push_back(
-                    Element{
-                        .mesh = vault.mesh_cache["gen::cube"],
-                        .material = Phong{
-                            .diffuse_map = barrel_img_id_color,
-                            .specular_map = barrel_img_id_specular
-                        },
-                        .transform = Transform{
-                            .position = vec3{(i-3.0f) * 2.5f, 2.5f, -1.0f},
-                            .scale = vec3(1.0f)
-                        }
-                    }
-                );
-                model.elements.push_back(
-                    Element{
-                        .mesh = vault.mesh_cache["gen::cube"],
-                        .material = Phong{
-                            .diffuse_map = emoji_img_id,
-                            .specular_map = barrel_img_id_specular
-                        },
-                        .transform = Transform{
-                            .position = vec3{(i-3.0f) * 2.5f, 2.5f, 1.0f},
-                            .scale = vec3(.5f)
-                        }
-                    }
-                );
-                scene.registry.emplace<Model>(entity, model);
-            }
-
-            // LIGHT 1
-            BasicLight light {
-                .position = vec3{(2-3.0f) * 2.5f, 1.0f, 3.0f},
-                .ambient = vec3(0),
-                .diffuse = vec3(0.8f, 0.99f, 0.6f),
-                .specular = vec3(1.0f, 1.0f, 1.0f),
-            };
-            Model light_model;
-            light_model.elements.push_back(
+            // snake parts
+            Model model;
+            model.elements.push_back(
                 Element{
-                    .mesh = vault.mesh_cache["gen::cube"],
+                    .mesh = _vault.mesh_cache["gen::cube"],
+                    .material = Phong{
+                        .diffuse_map = barrel_img_id_color,
+                        .specular_map = barrel_img_id_specular
+                    },
+                    .transform = Transform{
+                        .position = vec3{0},
+                        .scale = vec3(1.0f)
+                    }
                 }
             );
-            auto light_entity = scene.registry.create();
-            scene.registry.emplace<BasicLight>(light_entity, light);
-            scene.registry.emplace<Model>(light_entity, light_model);
+            _snake_body_part = model;
 
-            // LIGHT 2
-            BasicLight light2 {
-                .position = vec3{2.0f, 1.0f, 3.0f},
-                .ambient = vec3(0),
-                .diffuse = vec3(0.6f, 0.8f, 0.99f),
-                .specular = vec3(1.0f, 1.0f, 1.0f),
-            };
-            Model light_model2;
-            light_model2.elements.push_back(
+
+            Model snake_head;
+            snake_head.elements.push_back(
                 Element{
-                    .mesh = vault.mesh_cache["gen::cube"],
+                    .mesh = _vault.mesh_cache["gen::cube"],
+                    .material = Phong{
+                        .diffuse_map = emoji_img_id,
+                        .specular_map = barrel_img_id_specular
+                    },
+                    .transform = Transform{
+                        .position = vec3{5, 5, .0f},
+                        .scale = vec3{1.0f, 1.0f, 1.0f}
+                    }
                 }
             );
-            auto light_entity2 = scene.registry.create();
-            scene.registry.emplace<BasicLight>(light_entity2, light2);
-            scene.registry.emplace<Model>(light_entity2, light_model2);
+            auto head_entity = scene.registry.create();
+            scene.registry.emplace<Model>(head_entity, snake_head);
+            _snek.clear();
+            _snek.push_back(head_entity);
 
-            // LIGHT 3 - directional light
-            DirectionalLight light3 {
-                .direction = vec3{0.0f, -1.0f, 0.0f},
+            
+
+            // directional light
+            DirectionalLight dir_light {
+                .direction = vec3{0.0f, -1.0f, -1.0f},
                 .ambient = vec3(0.2f, 0.2f, 0.2f),
                 .diffuse = vec3(0.0f, 0.0f, 0.0f),
                 .specular = vec3(0.0f, 0.0f, 0.0f),
             };
             auto light_entity3 = scene.registry.create();
-            scene.registry.emplace<DirectionalLight>(light_entity3, light3);
+            scene.registry.emplace<DirectionalLight>(light_entity3, dir_light);
 
-            // LIGHT 4 - directional light
-            PointLight point_light_0 {
-                .position {1.0f, 1.0f, 1.0f},
-                .constant = 1.0f,
-                .linear = 0.14f,
-                .quadratic = 0.07f,
-                .ambient {0.0f},
-                .diffuse {1.0f},
-                .specular {1.0f}
-            };
-            Model point_light_0_model
+            // point lights
+            float d = 11.0f;
+            PointLight point_light_tl {.position {0, d, 0.0f}};
+            PointLight point_light_tr {.position {d, d, 0.0f}};
+            PointLight point_light_bl {.position {0, 0, 0.0f}};
+            PointLight point_light_br {.position {d, 0, 0.0f}};
+            PointLight point_light_tm {.position {d/2, d, 0.0f}};
+            PointLight point_light_rm {.position {d, d/2, 0.0f}};
+            PointLight point_light_bm {.position {d/2, 0, 0.0f}};
+            PointLight point_light_lm {.position {0, d/2, 0.0f}};
+            Model point_light_model
             {
                 .elements = {
                     Element{
-                        .mesh = vault.mesh_cache["gen::cube"],
+                        .mesh = _vault.mesh_cache["gen::cube"],
                         .material = Phong{},
                         .transform = Transform{
                             .position = vec3{0},
                             .rotation = vec3(0),
-                            .scale = vec3(.15f)
+                            .scale = vec3(1.0f)
                         }
                     }
                 }
             };
             auto point_light_entity_0 = scene.registry.create();
-            scene.registry.emplace<PointLight>(point_light_entity_0, point_light_0);
-            scene.registry.emplace<Model>(point_light_entity_0, point_light_0_model);
-
-
-            return std::pair{std::move(scene), std::move(vault)};
+            auto point_light_entity_1 = scene.registry.create();
+            auto point_light_entity_2 = scene.registry.create();
+            auto point_light_entity_3 = scene.registry.create();
+            auto point_light_entity_4 = scene.registry.create();
+            auto point_light_entity_5 = scene.registry.create();
+            auto point_light_entity_6 = scene.registry.create();
+            auto point_light_entity_7 = scene.registry.create();
+            scene.registry.emplace<PointLight>(point_light_entity_0, point_light_tl);
+            scene.registry.emplace<PointLight>(point_light_entity_1, point_light_tr);
+            scene.registry.emplace<PointLight>(point_light_entity_2, point_light_bl);
+            scene.registry.emplace<PointLight>(point_light_entity_3, point_light_br);
+            scene.registry.emplace<PointLight>(point_light_entity_4, point_light_tm);
+            scene.registry.emplace<PointLight>(point_light_entity_5, point_light_rm);
+            scene.registry.emplace<PointLight>(point_light_entity_6, point_light_bm);
+            scene.registry.emplace<PointLight>(point_light_entity_7, point_light_lm);
+            scene.registry.emplace<Model>(point_light_entity_0, point_light_model);
+            scene.registry.emplace<Model>(point_light_entity_1, point_light_model);
+            scene.registry.emplace<Model>(point_light_entity_2, point_light_model);
+            scene.registry.emplace<Model>(point_light_entity_3, point_light_model);
+            scene.registry.emplace<Model>(point_light_entity_4, point_light_model);
+            scene.registry.emplace<Model>(point_light_entity_5, point_light_model);
+            scene.registry.emplace<Model>(point_light_entity_6, point_light_model);
+            scene.registry.emplace<Model>(point_light_entity_7, point_light_model);
         }
 
         void log_fps()
@@ -341,7 +381,8 @@ namespace ruya
             // update camera interaction when user is not interacting with imgui
             if (!imgui_io.WantCaptureMouse) 
             {
-                update_camera_position();
+                // update_camera_position();
+                update_snake_position();
                 update_camera_look_direction();
                 update_render_mode();
             }
@@ -374,16 +415,45 @@ namespace ruya
         }
 
 
+        void update_snake_position()
+        {
+            GLFWwindow* glfw_window = _window.get_GLFW_window();
+            float step = .05f;
+            float delta_x = 0;
+            float delta_y = 0;
+            if (glfwGetKey(glfw_window, Key::W) == GLFW_PRESS)
+            {
+                delta_y += step;
+            }
+            
+            if (glfwGetKey(glfw_window, Key::S) == GLFW_PRESS)
+            {
+                delta_y -= step;
+            }
+            
+            if (glfwGetKey(glfw_window, Key::A) == GLFW_PRESS)
+            {
+                delta_x -= step;
+            }
+            
+            if (glfwGetKey(glfw_window, Key::D) == GLFW_PRESS)
+            {
+                delta_x += step;
+            }
+            Model& head = _scene.registry.get<Model>(_snek[0]);
+            head.elements[0].transform.position += vec3{delta_x, delta_y, 0};
+        }
+
         void update_camera_position()
         {
-            GLFWwindow* glfwWindow = _window.get_GLFW_window();
+            GLFWwindow* glfw_window = _window.get_GLFW_window();
             
             // move camera forward/backward/left/right perpendicular with the xz plane
             // move camera up/down along y-axis
             float moveSpeed = 6.0f; // units per second
             float dt = _frame_timer.elapsed_time_s();
 
-            if (glfwGetKey(glfwWindow, GLFW_KEY_W) == GLFW_PRESS)
+            if (glfwGetKey(glfw_window, GLFW_KEY_W) == GLFW_PRESS)
             {
                 vec3 direction = _camera.cam_front();
                 vec2 moveDirection = glm::normalize(glm::vec2(direction.x, direction.z));
@@ -393,7 +463,7 @@ namespace ruya
                 _camera.set_position(pos);
             }
 
-            if (glfwGetKey(glfwWindow, GLFW_KEY_S) == GLFW_PRESS)
+            if (glfwGetKey(glfw_window, GLFW_KEY_S) == GLFW_PRESS)
             {
                 vec3 direction = _camera.cam_front();
                 vec2 moveDirection = glm::normalize(glm::vec2(direction.x, direction.z));
@@ -403,7 +473,7 @@ namespace ruya
                 _camera.set_position(pos);
             }
 
-            if (glfwGetKey(glfwWindow, GLFW_KEY_A) == GLFW_PRESS)
+            if (glfwGetKey(glfw_window, GLFW_KEY_A) == GLFW_PRESS)
             {
                 vec3 direction = _camera.cam_front();
                 vec2 moveDirection = glm::normalize(glm::vec2(direction.x, direction.z));
@@ -414,7 +484,7 @@ namespace ruya
                 _camera.set_position(pos);
             }
 
-            if (glfwGetKey(glfwWindow, GLFW_KEY_D) == GLFW_PRESS)
+            if (glfwGetKey(glfw_window, GLFW_KEY_D) == GLFW_PRESS)
             {
                 vec3 direction = _camera.cam_front();
                 vec2 moveDirection = glm::normalize(glm::vec2(direction.x, direction.z));
@@ -425,14 +495,14 @@ namespace ruya
                 _camera.set_position(pos);
             }
 
-            if (glfwGetKey(glfwWindow, GLFW_KEY_SPACE) == GLFW_PRESS)
+            if (glfwGetKey(glfw_window, GLFW_KEY_SPACE) == GLFW_PRESS)
             {
                 vec3 pos = _camera.position();
                 pos.y += moveSpeed * _frame_timer.elapsed_time_s();
                 _camera.set_position(pos);
             }
 
-            if (glfwGetKey(glfwWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+            if (glfwGetKey(glfw_window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
             {
                 vec3 pos = _camera.position();
                 pos.y -= moveSpeed * _frame_timer.elapsed_time_s();
@@ -447,14 +517,14 @@ namespace ruya
             glfwGetCursorPos(_window.get_GLFW_window(), &(pos.x), &(pos.y));
 
             // look around when mouse is pressed
-            GLFWwindow* glfwWindow = _window.get_GLFW_window();
-            if (glfwGetMouseButton(glfwWindow, GLFW_MOUSE_BUTTON_1) == GLFW_RELEASE)
+            GLFWwindow* glfw_window = _window.get_GLFW_window();
+            if (glfwGetMouseButton(glfw_window, GLFW_MOUSE_BUTTON_1) == GLFW_RELEASE)
             {
                 _window.set_cursor_mode(Window::CursorMode::NORMAL);
                 _old_mouse_pos = pos; // so that the view doesn't jump when pressing the button to rotate camera
                 return;
             }
-            if (glfwGetMouseButton(glfwWindow, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
+            if (glfwGetMouseButton(glfw_window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
             {
                 _window.set_cursor_mode(Window::CursorMode::DISABLED);
             }
@@ -480,4 +550,4 @@ namespace ruya
     };
 }
 
-#endif // TEST_APP_H
+#endif // SNAKE_H

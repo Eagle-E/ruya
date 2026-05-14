@@ -20,7 +20,6 @@ using ruya::render::MeshGPU;
 using ruya::render::resolve_mesh;
 using ruya::render::resolve_texture;
 using ruya::scene::Model;
-using ruya::scene::TextureID;
 using ruya::scene::BasicLight;
 using ruya::scene::DirectionalLight;
 using ruya::scene::PointLight;

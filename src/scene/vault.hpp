@@ -28,7 +28,6 @@ namespace ruya::scene
 
     using MeshID = IDType;
     using ImageID = IDType;
-    using TextureID = IDType;
 
 
     struct Vault
@@ -37,11 +36,14 @@ namespace ruya::scene
         std::vector<Image> images;
 
         std::unordered_map<fs::path, MeshID> mesh_cache;
-        std::unordered_map<fs::path, TextureID> texture_cache;
+        std::unordered_map<fs::path, ImageID> image_cache;
 
 
         ImageID load_image(const fs::path& image_path)
         {
+            if (image_cache.find(image_path) != image_cache.end())
+                return image_cache[image_path];
+
             // load texture image
             Image image = ruya::io::load_image(image_path);
             if (image.pixels.empty())
@@ -65,6 +67,7 @@ namespace ruya::scene
 
         MeshID add_mesh(Mesh mesh, const fs::path& mesh_path = "")
         {
+            // TODO: check if mesh_path already exists
             meshes.push_back(std::move(mesh));
             MeshID new_id = static_cast<MeshID>(meshes.size() - 1);
 

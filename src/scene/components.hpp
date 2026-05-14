@@ -7,7 +7,6 @@
 #include "scene/material.h"
 #include "core/math/transform.hpp"
 
-using ruya::scene::TextureID;
 using ruya::scene::MeshID;
 using ruya::scene::materials::Phong;
 using ruya::math::Transform;

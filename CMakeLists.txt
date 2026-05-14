@@ -84,6 +84,7 @@ target_sources(${MAIN_TARGET} PRIVATE
     ${HEADERS}
     "src/main.cpp"
     "src/test_app.hpp"
+    "src/snake.hpp"
 )
 
 
