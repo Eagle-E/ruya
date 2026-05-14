@@ -2,26 +2,23 @@
 #include <filesystem>
 
 #include "test_app.hpp"
-#include "core/window.h"
+#include "io/window.h"
 #include <whereami/whereami++.h>
 
 namespace fs = std::filesystem;
 
 int main()
 {
-	ruya::Window window(1450, 875);
-	window.make_context_current();
-
     fs::path exeDir{whereami::getModulePath().dirname()};
     fs::path moduleDir{whereami::getModulePath().dirname()};
 
     std::cout << "[INFO] exe dir: " << exeDir << std::endl;
     std::cout << "[INFO] module dir: " << moduleDir << std::endl;
 
-	ruya::TestApp app(window);
-
+	
 	try
 	{
+		ruya::TestApp app;
 		app.run();
 	}
 	catch (const std::runtime_error& e)

@@ -7,7 +7,7 @@
 #include <memory>
 #include <unordered_map>
 
-#include "core/window.h"
+#include "io/window.h"
 #include "render/gpu_vault.hpp"
 #include "render/shader.h"
 #include "render/texture.hpp"

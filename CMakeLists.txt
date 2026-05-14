@@ -19,7 +19,7 @@ set(HEADERS
     app.h
     core/timer.h
     core/uuid.h
-    core/window.h
+    io/window.h
     io/stb_image.h
     render/renderer.h
     render/shader.h
@@ -33,7 +33,7 @@ set(SOURCES
     # test_app.hpp
     core/math/transform.hpp
     core/timer.cpp
-    core/window.cpp
+    io/window.cpp
     io/file_io.hpp
     io/image_io.hpp
     io/stb_image.cpp
@@ -53,6 +53,7 @@ set(SOURCES
     ui/model_widget.h
     ui/scene_widget.h
     ui/widgets.hpp
+    ui/ui.hpp
 )
 
 # Compiler definitions

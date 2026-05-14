@@ -8,6 +8,7 @@
 #include <memory>
 #include <filesystem>
 #include <format>
+#include <utility>
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -24,7 +25,7 @@
 #include "io/paths.hpp"
 #include "app.h"
 #include "core/timer.h"
-#include "core/window.h"
+#include "io/window.h"
 #include "render/shader.h"
 #include "scene/mesh.h"
 #include "render/renderer.h"
@@ -38,6 +39,7 @@
 
 #include "ui/model_widget.h"
 #include "ui/scene_widget.h"
+#include "ui/ui.hpp"
 
 namespace fs = std::filesystem;
 namespace gen = ruya::scene::gen;
@@ -67,34 +69,36 @@ using ruya::scene::materials::PhongMaterials;
 
 namespace ruya
 {
+    enum class RenderMode { FILL, WIREFRAME };
+
     class TestApp : public App
     {
     private: // VARIABLES
         Camera _camera;
         Timer _frame_timer;
         Timer _frame_output_timer;
-        Window& _window;
+        Window _window {1450, 875};
         dvec2 _old_mouse_pos {-1.0, -1.0};
         bool _allow_shading_mode_change = true;
+        bool _allow_render_mode_change = true;
+        RenderMode _render_mode = RenderMode::FILL;
         Renderer* _renderer;
 
     public: // FUNCTIONS
-        /*** CONSTRUCT ***/
-        TestApp(Window& window) : _window(window)
-        { 
-            glfwSetInputMode(window.get_GLFW_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        }
 
-        /*** DESTRUCT ***/
-        ~TestApp()
+        void clear_frame_buffer(glm::vec3 color)
         {
-            // glfwTerminate(); // clean up all reasources allocated by glfw.
+            glClearColor(color.r, color.g, color.b, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         }
-
 
         /*** MAINLOOP ***/
         void run()
-        {            
+        {
+            // window settings
+            _window.make_context_current();
+            glfwSetInputMode(_window.get_GLFW_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
             // init renderer and shaders
             std::cout << "Run start" << std::endl;
             
@@ -121,18 +125,53 @@ namespace ruya
             _renderer = &renderer;
             std::cout << "Init renderer" << std::endl;
 
-            // init scene
-            Scene scene;
-            scene.background_color = vec4(.1f, .1f, .1f, 1.0f);
-            std::cout << "Init Scene" << std::endl;
-
 			// the object to render
             // ruya::render::print_max_texture_units_info();
+            
+            auto [scene, vault] = make_sample_scene();
+        	ruya::ui::initialize(_window.get_GLFW_window());
+
+            // MAIN LOOP
+            _frame_output_timer.start();
+            while (!_window.should_close())
+            {
+                _frame_timer.start();
+
+                // prepare ui
+                ruya::ui::new_frame();
+                {
+                    ruya::ui::settings_pane(scene, vault);
+                }
+                
+				// RENDER!!!
+                clear_frame_buffer(scene.background_color);
+                renderer.render_scene(scene, vault);
+                ruya::ui::render_frame();
+
+                // update frame => swaps buffers = starts showing newly rendered buffer
+                // + checks for input events and calls handlers
+                _window.update();
+
+                // calc FPS
+                log_fps();
+                poll_and_process_events();
+            }
+
+            // cleanup
+            ruya::ui::shutdown();
+            glfwTerminate(); // clean up all reasources allocated by glfw.
+        }
+
+
+        std::pair<Scene, Vault> make_sample_scene()
+        {
+            std::cout << "Initializing Scene" << std::endl;
+
+            Vault vault;
+
 			fs::path texPathBarrelColor {ruya::io::DIR_RESOURCES / "barrel" / "barrel_color.png"};
 			fs::path texPathBarrelSpecular {ruya::io::DIR_RESOURCES / "barrel" / "barrel_specular.png"};
 			fs::path texPathEmojiColor {ruya::io::DIR_RESOURCES / "emoji" / "emoji_color.png"};
-
-            Vault vault;
             ImageID barrel_img_id_color = vault.load_image(texPathBarrelColor);
             ImageID barrel_img_id_specular = vault.load_image(texPathBarrelSpecular);
             ImageID emoji_img_id = vault.load_image(texPathEmojiColor);
@@ -141,6 +180,9 @@ namespace ruya
             vault.add_mesh(gen::icosahedron(), "gen::icosahedron");
             vault.add_mesh(gen::icosphere(), "gen::icosphere");
 			std::cout << "Init textures" << std::endl;
+
+            Scene scene;
+            scene.background_color = vec3(.1f, .1f, .1f);
 
             // add cubes in a line
             int n_cubes = 5;
@@ -176,7 +218,7 @@ namespace ruya
                 );
                 scene.registry.emplace<Model>(entity, model);
             }
-            
+
             // LIGHT 1
             BasicLight light {
                 .position = vec3{(2-3.0f) * 2.5f, 1.0f, 3.0f},
@@ -248,45 +290,9 @@ namespace ruya
             auto point_light_entity_0 = scene.registry.create();
             scene.registry.emplace<PointLight>(point_light_entity_0, point_light_0);
             scene.registry.emplace<Model>(point_light_entity_0, point_light_0_model);
-            
 
-            // MAIN LOOP
-            _frame_output_timer.start();
-            while (!_window.should_close())
-            {
-                _frame_timer.start();
 
-                // move the light around
-                // scene.registry.get<BasicLight>(light_entity).position = {cos(glfwGetTime()) * 7.5f, 5.0f, 3.0f};
-
-                // prepare ui
-                ImGui_ImplOpenGL3_NewFrame();
-                ImGui_ImplGlfw_NewFrame();
-                ImGui::NewFrame();
-                {
-                    // In your ImGui window:
-                    ImGui::Begin("Settings");
-                    {
-                        ruya::ui::scene_widget(scene, vault);
-                    }
-                    ImGui::End();
-                }
-                
-
-				// RENDER!!!
-                _window.clear_frame_buffer(scene.background_color);
-                renderer.render_scene(scene, vault);
-                ImGui::Render();
-                ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-                // update frame => swaps buffers = starts showing newly rendered buffer
-                // + checks for input events and calls handlers
-                _window.update();
-
-                // calc FPS
-                log_fps();
-                poll_and_process_events();
-            }
+            return std::pair{std::move(scene), std::move(vault)};
         }
 
         void log_fps()
@@ -309,9 +315,9 @@ namespace ruya
         {
             ImGuiIO& imgui_io = ImGui::GetIO();
             
-            GLFWwindow* glfwWindow = _window.get_GLFW_window();
+            GLFWwindow* glfw_window = _window.get_GLFW_window();
             
-            if (glfwGetKey(glfwWindow, GLFW_KEY_2) == GLFW_PRESS && _allow_shading_mode_change)
+            if (glfwGetKey(glfw_window, GLFW_KEY_2) == GLFW_PRESS && _allow_shading_mode_change)
             {
                 if (_renderer != nullptr)
                 {
@@ -322,10 +328,14 @@ namespace ruya
                     _allow_shading_mode_change = false;
                 }
             }
-            if (glfwGetKey(glfwWindow, GLFW_KEY_2) == GLFW_RELEASE)
+
+            if (glfwGetKey(glfw_window, GLFW_KEY_2) == GLFW_RELEASE)
             {
                 _allow_shading_mode_change = true;
             }
+
+            if (glfwGetKey(glfw_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+                glfwSetWindowShouldClose(glfw_window, true);
 
 
             // CAMERA CONTROL
@@ -334,8 +344,36 @@ namespace ruya
             {
                 update_camera_position();
                 update_camera_look_direction();
+                update_render_mode();
             }
         }
+
+        void update_render_mode()
+        {
+            GLFWwindow* glfw_window = _window.get_GLFW_window();
+
+            if (glfwGetKey(glfw_window, GLFW_KEY_1) == GLFW_PRESS && _allow_render_mode_change)
+            {
+                switch (_render_mode)
+                {
+                case RenderMode::FILL:
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                    _render_mode = RenderMode::WIREFRAME;
+                    break;
+                case RenderMode::WIREFRAME:
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                    _render_mode = RenderMode::FILL;
+                    break;
+                }
+
+                _allow_render_mode_change = false;
+            }
+            else if (glfwGetKey(glfw_window, GLFW_KEY_1) == GLFW_RELEASE)
+            {
+                _allow_render_mode_change = true;
+            }
+        }
+
 
         void update_camera_position()
         {
