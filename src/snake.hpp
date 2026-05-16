@@ -247,7 +247,7 @@ namespace ruya
                         .specular = vec3{0.0f},
                     },
                     .transform = Transform{
-                        .position = vec3{COLS*CELL_SIZE/2, ROWS*CELL_SIZE/2, .0f},
+                        .position = vec3{COLS*CELL_SIZE/2, ROWS*CELL_SIZE/2, -CELL_SIZE},
                         .scale = vec3{COLS*CELL_SIZE, ROWS*CELL_SIZE, 1.0f}
                     }
                 }
@@ -462,20 +462,21 @@ namespace ruya
 
             // movement speed
             _snek_timer.stop();
-            float cells_per_second = 1;
+            float cells_per_second = 2;
             float seconds = static_cast<float>(_snek_timer.elapsed_time_s());
-            float cells_to_move = seconds / cells_per_second;
+            float cells_to_move = cells_per_second * seconds;
             int move_now = static_cast<int>(std::trunc(cells_to_move));
             _remaining_cells = cells_to_move - std::trunc(cells_to_move);
 
             if (move_now == 0)
                 return;
 
-            float delta_x = dir.x;
-            float delta_y = dir.y;
+            float delta_x = dir.x * move_now * CELL_SIZE;
+            float delta_y = dir.y * move_now * CELL_SIZE;
 
             Model& head = _scene.registry.get<Model>(_snek[0]);
             head.elements[0].transform.position += vec3{delta_x, delta_y, 0};
+            _snek_timer.start();
         }
 
         void update_camera_position()
