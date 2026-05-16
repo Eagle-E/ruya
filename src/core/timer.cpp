@@ -25,7 +25,7 @@ void ruya::Timer::stop()
 * Returns the elsapsed time between start() and stop() calls.
 *	-	If the stop call has not yet been called after start() then
 *		it returns the elapsed time since start() until now.
-* //TODO: in what unit?
+* //TODO: use static cast
 */
 double ruya::Timer::elapsed_time_s() const
 {

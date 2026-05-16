@@ -23,6 +23,7 @@
 #include <format>
 #include <utility>
 #include <vector>
+#include <cmath>
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -116,7 +117,6 @@ namespace
 
 namespace ruya
 {
-
     class Snake : public App
     {
     private: // VARIABLES
@@ -129,10 +129,16 @@ namespace ruya
         bool _allow_render_mode_change = true;
         RenderMode _render_mode = RenderMode::FILL;
         Renderer* _renderer;
+        Timer _snek_timer;
         Vault _vault;
         Scene _scene;
         Model _snake_body_part;
         std::vector<entt::entity> _snek;
+        float _remaining_cells{0.0f};
+        const float CELL_SIZE = 1.0f;
+        const float ROWS = 8;
+        const float COLS = 12;
+
 
     public: // FUNCTIONS
 
@@ -179,12 +185,144 @@ namespace ruya
 			// the object to render
             // ruya::render::print_max_texture_units_info();
             
-            init_scene(_scene);
+            // ----------------------------------------------------------------------------------------------------
+            fs::path texPathBarrelColor {ruya::io::DIR_RESOURCES / "barrel" / "barrel_color.png"};
+			fs::path texPathBarrelSpecular {ruya::io::DIR_RESOURCES / "barrel" / "barrel_specular.png"};
+			fs::path texPathEmojiColor {ruya::io::DIR_RESOURCES / "emoji" / "emoji_color.png"};
+            ImageID barrel_img_id_color = _vault.load_image(texPathBarrelColor);
+            ImageID barrel_img_id_specular = _vault.load_image(texPathBarrelSpecular);
+            ImageID emoji_img_id = _vault.load_image(texPathEmojiColor);
+            _vault.add_mesh(gen::cube(), "gen::cube");
+            _vault.add_mesh(gen::square(), "gen::square");
+            _vault.add_mesh(gen::icosahedron(), "gen::icosahedron");
+            _vault.add_mesh(gen::icosphere(), "gen::icosphere");
+			std::cout << "Init textures" << std::endl;
+
+            _scene.background_color = vec3(.1f, .1f, .1f);
+
+            // snake parts
+            Model model;
+            model.elements.push_back(
+                Element{
+                    .mesh = _vault.mesh_cache["gen::cube"],
+                    .material = Phong{
+                        .diffuse_map = barrel_img_id_color,
+                        .specular_map = barrel_img_id_specular
+                    },
+                    .transform = Transform{
+                        .position = vec3{0},
+                        .scale = vec3(1.0f)
+                    }
+                }
+            );
+            _snake_body_part = model;
+
+
+            Model snake_head;
+            snake_head.elements.push_back(
+                Element{
+                    .mesh = _vault.mesh_cache["gen::cube"],
+                    .material = Phong{
+                        .diffuse_map = emoji_img_id,
+                        .specular_map = barrel_img_id_specular
+                    },
+                    .transform = Transform{
+                        .position = vec3{.0f},
+                        .scale = vec3{1.0f, 1.0f, 1.0f}
+                    }
+                }
+            );
+            auto head_entity = _scene.registry.create();
+            _scene.registry.emplace<Model>(head_entity, snake_head);
+            _snek.clear();
+            _snek.push_back(head_entity);
+
+            // floor
+            Model floor_model;
+            floor_model.elements.push_back(
+                Element{
+                    .mesh = _vault.mesh_cache["gen::cube"],
+                    .material = Phong{
+                        .diffuse = vec3{1.0f},
+                        .specular = vec3{0.0f},
+                    },
+                    .transform = Transform{
+                        .position = vec3{COLS*CELL_SIZE/2, ROWS*CELL_SIZE/2, .0f},
+                        .scale = vec3{COLS*CELL_SIZE, ROWS*CELL_SIZE, 1.0f}
+                    }
+                }
+            );
+            auto floor_entity = _scene.registry.create();
+            _scene.registry.emplace<Model>(floor_entity, floor_model);
+
+
+            // directional light
+            DirectionalLight dir_light {
+                .direction = vec3{0.0f, 0.0f, -1.0f},
+                .ambient = vec3(0.2f, 0.2f, 0.2f),
+                .diffuse = vec3(0.9f, 0.9f, 0.9f),
+                .specular = vec3(0.0f, 0.0f, 0.0f),
+            };
+            auto light_entity3 = _scene.registry.create();
+            _scene.registry.emplace<DirectionalLight>(light_entity3, dir_light);
+
+            // point lights
+            // float d = 11.0f;
+            // PointLight point_light_tl {.position {0, d, 0.0f}};
+            // PointLight point_light_tr {.position {d, d, 0.0f}};
+            // PointLight point_light_bl {.position {0, 0, 0.0f}};
+            // PointLight point_light_br {.position {d, 0, 0.0f}};
+            // PointLight point_light_tm {.position {d/2, d, 0.0f}};
+            // PointLight point_light_rm {.position {d, d/2, 0.0f}};
+            // PointLight point_light_bm {.position {d/2, 0, 0.0f}};
+            // PointLight point_light_lm {.position {0, d/2, 0.0f}};
+            // Model point_light_model
+            // {
+            //     .elements = {
+            //         Element{
+            //             .mesh = _vault.mesh_cache["gen::cube"],
+            //             .material = Phong{},
+            //             .transform = Transform{
+            //                 .position = vec3{0},
+            //                 .rotation = vec3(0),
+            //                 .scale = vec3(1.0f)
+            //             }
+            //         }
+            //     }
+            // };
+            // auto point_light_entity_0 = _scene.registry.create();
+            // auto point_light_entity_1 = _scene.registry.create();
+            // auto point_light_entity_2 = _scene.registry.create();
+            // auto point_light_entity_3 = _scene.registry.create();
+            // auto point_light_entity_4 = _scene.registry.create();
+            // auto point_light_entity_5 = _scene.registry.create();
+            // auto point_light_entity_6 = _scene.registry.create();
+            // auto point_light_entity_7 = _scene.registry.create();
+            // _scene.registry.emplace<PointLight>(point_light_entity_0, point_light_tl);
+            // _scene.registry.emplace<PointLight>(point_light_entity_1, point_light_tr);
+            // _scene.registry.emplace<PointLight>(point_light_entity_2, point_light_bl);
+            // _scene.registry.emplace<PointLight>(point_light_entity_3, point_light_br);
+            // _scene.registry.emplace<PointLight>(point_light_entity_4, point_light_tm);
+            // _scene.registry.emplace<PointLight>(point_light_entity_5, point_light_rm);
+            // _scene.registry.emplace<PointLight>(point_light_entity_6, point_light_bm);
+            // _scene.registry.emplace<PointLight>(point_light_entity_7, point_light_lm);
+            // _scene.registry.emplace<Model>(point_light_entity_0, point_light_model);
+            // _scene.registry.emplace<Model>(point_light_entity_1, point_light_model);
+            // _scene.registry.emplace<Model>(point_light_entity_2, point_light_model);
+            // _scene.registry.emplace<Model>(point_light_entity_3, point_light_model);
+            // _scene.registry.emplace<Model>(point_light_entity_4, point_light_model);
+            // _scene.registry.emplace<Model>(point_light_entity_5, point_light_model);
+            // _scene.registry.emplace<Model>(point_light_entity_6, point_light_model);
+            // _scene.registry.emplace<Model>(point_light_entity_7, point_light_model);
+            // ----------------------------------------------------------------------------------------------------
+            
+
             _camera.set_position(vec3{5, 5, 17.5f});
         	ruya::ui::initialize(_window.get_GLFW_window());
 
             // MAIN LOOP
             _frame_output_timer.start();
+            _snek_timer.start();
             while (!_window.should_close())
             {
                 _frame_timer.start();
@@ -215,124 +353,6 @@ namespace ruya
         }
 
 
-
-        void init_scene(Scene& scene)
-        {
-            std::cout << "Initializing Scene" << std::endl;
-
-
-			fs::path texPathBarrelColor {ruya::io::DIR_RESOURCES / "barrel" / "barrel_color.png"};
-			fs::path texPathBarrelSpecular {ruya::io::DIR_RESOURCES / "barrel" / "barrel_specular.png"};
-			fs::path texPathEmojiColor {ruya::io::DIR_RESOURCES / "emoji" / "emoji_color.png"};
-            ImageID barrel_img_id_color = _vault.load_image(texPathBarrelColor);
-            ImageID barrel_img_id_specular = _vault.load_image(texPathBarrelSpecular);
-            ImageID emoji_img_id = _vault.load_image(texPathEmojiColor);
-            _vault.add_mesh(gen::cube(), "gen::cube");
-            _vault.add_mesh(gen::square(), "gen::square");
-            _vault.add_mesh(gen::icosahedron(), "gen::icosahedron");
-            _vault.add_mesh(gen::icosphere(), "gen::icosphere");
-			std::cout << "Init textures" << std::endl;
-
-            scene.background_color = vec3(.1f, .1f, .1f);
-
-            // snake parts
-            Model model;
-            model.elements.push_back(
-                Element{
-                    .mesh = _vault.mesh_cache["gen::cube"],
-                    .material = Phong{
-                        .diffuse_map = barrel_img_id_color,
-                        .specular_map = barrel_img_id_specular
-                    },
-                    .transform = Transform{
-                        .position = vec3{0},
-                        .scale = vec3(1.0f)
-                    }
-                }
-            );
-            _snake_body_part = model;
-
-
-            Model snake_head;
-            snake_head.elements.push_back(
-                Element{
-                    .mesh = _vault.mesh_cache["gen::cube"],
-                    .material = Phong{
-                        .diffuse_map = emoji_img_id,
-                        .specular_map = barrel_img_id_specular
-                    },
-                    .transform = Transform{
-                        .position = vec3{5, 5, .0f},
-                        .scale = vec3{1.0f, 1.0f, 1.0f}
-                    }
-                }
-            );
-            auto head_entity = scene.registry.create();
-            scene.registry.emplace<Model>(head_entity, snake_head);
-            _snek.clear();
-            _snek.push_back(head_entity);
-
-            
-
-            // directional light
-            DirectionalLight dir_light {
-                .direction = vec3{0.0f, -1.0f, -1.0f},
-                .ambient = vec3(0.2f, 0.2f, 0.2f),
-                .diffuse = vec3(0.0f, 0.0f, 0.0f),
-                .specular = vec3(0.0f, 0.0f, 0.0f),
-            };
-            auto light_entity3 = scene.registry.create();
-            scene.registry.emplace<DirectionalLight>(light_entity3, dir_light);
-
-            // point lights
-            float d = 11.0f;
-            PointLight point_light_tl {.position {0, d, 0.0f}};
-            PointLight point_light_tr {.position {d, d, 0.0f}};
-            PointLight point_light_bl {.position {0, 0, 0.0f}};
-            PointLight point_light_br {.position {d, 0, 0.0f}};
-            PointLight point_light_tm {.position {d/2, d, 0.0f}};
-            PointLight point_light_rm {.position {d, d/2, 0.0f}};
-            PointLight point_light_bm {.position {d/2, 0, 0.0f}};
-            PointLight point_light_lm {.position {0, d/2, 0.0f}};
-            Model point_light_model
-            {
-                .elements = {
-                    Element{
-                        .mesh = _vault.mesh_cache["gen::cube"],
-                        .material = Phong{},
-                        .transform = Transform{
-                            .position = vec3{0},
-                            .rotation = vec3(0),
-                            .scale = vec3(1.0f)
-                        }
-                    }
-                }
-            };
-            auto point_light_entity_0 = scene.registry.create();
-            auto point_light_entity_1 = scene.registry.create();
-            auto point_light_entity_2 = scene.registry.create();
-            auto point_light_entity_3 = scene.registry.create();
-            auto point_light_entity_4 = scene.registry.create();
-            auto point_light_entity_5 = scene.registry.create();
-            auto point_light_entity_6 = scene.registry.create();
-            auto point_light_entity_7 = scene.registry.create();
-            scene.registry.emplace<PointLight>(point_light_entity_0, point_light_tl);
-            scene.registry.emplace<PointLight>(point_light_entity_1, point_light_tr);
-            scene.registry.emplace<PointLight>(point_light_entity_2, point_light_bl);
-            scene.registry.emplace<PointLight>(point_light_entity_3, point_light_br);
-            scene.registry.emplace<PointLight>(point_light_entity_4, point_light_tm);
-            scene.registry.emplace<PointLight>(point_light_entity_5, point_light_rm);
-            scene.registry.emplace<PointLight>(point_light_entity_6, point_light_bm);
-            scene.registry.emplace<PointLight>(point_light_entity_7, point_light_lm);
-            scene.registry.emplace<Model>(point_light_entity_0, point_light_model);
-            scene.registry.emplace<Model>(point_light_entity_1, point_light_model);
-            scene.registry.emplace<Model>(point_light_entity_2, point_light_model);
-            scene.registry.emplace<Model>(point_light_entity_3, point_light_model);
-            scene.registry.emplace<Model>(point_light_entity_4, point_light_model);
-            scene.registry.emplace<Model>(point_light_entity_5, point_light_model);
-            scene.registry.emplace<Model>(point_light_entity_6, point_light_model);
-            scene.registry.emplace<Model>(point_light_entity_7, point_light_model);
-        }
 
         void log_fps()
         {
@@ -419,27 +439,41 @@ namespace ruya
         {
             GLFWwindow* glfw_window = _window.get_GLFW_window();
             float step = .05f;
-            float delta_x = 0;
-            float delta_y = 0;
+            vec2 dir {0, 0}; // direction in the x and y axis, positive = right/up, negative = left/down, zero = neutral/still
             if (glfwGetKey(glfw_window, Key::W) == GLFW_PRESS)
             {
-                delta_y += step;
+                dir.y++;
             }
             
             if (glfwGetKey(glfw_window, Key::S) == GLFW_PRESS)
             {
-                delta_y -= step;
+                dir.y--;
             }
             
             if (glfwGetKey(glfw_window, Key::A) == GLFW_PRESS)
             {
-                delta_x -= step;
+                dir.x--;
             }
             
             if (glfwGetKey(glfw_window, Key::D) == GLFW_PRESS)
             {
-                delta_x += step;
+                dir.x++;
             }
+
+            // movement speed
+            _snek_timer.stop();
+            float cells_per_second = 1;
+            float seconds = static_cast<float>(_snek_timer.elapsed_time_s());
+            float cells_to_move = seconds / cells_per_second;
+            int move_now = static_cast<int>(std::trunc(cells_to_move));
+            _remaining_cells = cells_to_move - std::trunc(cells_to_move);
+
+            if (move_now == 0)
+                return;
+
+            float delta_x = dir.x;
+            float delta_y = dir.y;
+
             Model& head = _scene.registry.get<Model>(_snek[0]);
             head.elements[0].transform.position += vec3{delta_x, delta_y, 0};
         }

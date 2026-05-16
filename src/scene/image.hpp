@@ -13,8 +13,6 @@ namespace ruya::scene
         int channels = 0;
         std::vector<std::byte> pixels;
     };
-
-    
 }
 
 

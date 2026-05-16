@@ -26,18 +26,58 @@ namespace ruya::scene
     using IDType = uint32_t;
     inline IDType NULL_ID = std::numeric_limits<IDType>::max();
 
-    using MeshID = IDType;
-    using ImageID = IDType;
+    using MeshID = IDType; 
+    using ImageID = IDType; // TODO: convert to struct?
+    constexpr MeshID INVALID_MESH_ID = 0;
 
 
     struct Vault
     {
-        std::vector<Mesh> meshes; // cpu side
-        std::vector<Image> images;
-
+    private:
+        std::vector<Mesh> _meshes; // cpu side
+        std::vector<Image> _images;
+    
+    public:
         std::unordered_map<fs::path, MeshID> mesh_cache;
         std::unordered_map<fs::path, ImageID> image_cache;
 
+        Vault()
+        {
+            Image default_image {
+                .width = 1,
+                .height = 1,
+                .channels = 4, // rgba
+                .pixels = {
+                    std::byte{225}, // r
+                    std::byte{225}, // g
+                    std::byte{225}, // b
+                    std::byte{255}  // a
+                }
+            };
+            _images.push_back(default_image);
+        }
+
+        Mesh& mesh(MeshID id)
+        {
+            assert(0 <= id && id < _meshes.size());
+            return _meshes[id];
+        }
+
+        Image& image(ImageID id)
+        {
+            assert(0 <= id && id < _images.size());
+            return _images[id];
+        }
+        
+        size_t size_images() const
+        {
+            return _images.size();
+        } 
+
+        size_t size_meshes() const
+        {
+            return _meshes.size();
+        }
 
         ImageID load_image(const fs::path& image_path)
         {
@@ -55,8 +95,8 @@ namespace ruya::scene
                 return ImageID(NULL_ID); // return invalid ID
             }
 
-            images.push_back(image);
-            ImageID new_id = static_cast<ImageID>(images.size() - 1);
+            _images.push_back(image);
+            ImageID new_id = static_cast<ImageID>(_images.size() - 1);
             return new_id;
         }
 
@@ -68,8 +108,8 @@ namespace ruya::scene
         MeshID add_mesh(Mesh mesh, const fs::path& mesh_path = "")
         {
             // TODO: check if mesh_path already exists
-            meshes.push_back(std::move(mesh));
-            MeshID new_id = static_cast<MeshID>(meshes.size() - 1);
+            _meshes.push_back(std::move(mesh));
+            MeshID new_id = static_cast<MeshID>(_meshes.size() - 1);
 
             if (!mesh_path.empty())
                 mesh_cache[mesh_path] = new_id;

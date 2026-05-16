@@ -143,17 +143,17 @@ namespace ruya::render
     inline void sync_vaults(Vault& cpu_vault, GPUVault& gpu_vault)
     {
         // TODO: are the resources cleaned up properly if the vectors are sized down?
-        if (gpu_vault.meshes.size() < cpu_vault.meshes.size())
-            gpu_vault.meshes.resize(cpu_vault.meshes.size());
-        if (gpu_vault.textures.size() < cpu_vault.images.size())
-            gpu_vault.textures.resize(cpu_vault.images.size());
+        if (gpu_vault.meshes.size() < cpu_vault.size_meshes())
+            gpu_vault.meshes.resize(cpu_vault.size_meshes());
+        if (gpu_vault.textures.size() < cpu_vault.size_images())
+            gpu_vault.textures.resize(cpu_vault.size_images());
     }
 
 
     /*
     * Get mesh handle corresponding to mesh with given ID, upload to gpu if needed.
     */
-    inline MeshGPU resolve_mesh(MeshID mesh_id, const Vault& vault, GPUVault& gpu_vault)
+    inline MeshGPU resolve_mesh(MeshID mesh_id, Vault& vault, GPUVault& gpu_vault)
     {
         assert(mesh_id >= 0 && mesh_id < gpu_vault.meshes.size());
 
@@ -162,7 +162,7 @@ namespace ruya::render
             return current_handle;
         
         // buffer given mesh
-        MeshGPU new_handle = buffer_mesh(vault.meshes[mesh_id]);
+        MeshGPU new_handle = buffer_mesh(vault.mesh(mesh_id));
         gpu_vault.meshes[mesh_id] = new_handle;
         return new_handle;
     }
@@ -199,7 +199,7 @@ namespace ruya::render
     */
     inline Texture resolve_texture(
         ImageID image_id,
-        const Vault& vault,
+        Vault& vault,
         GPUVault& gpu_vault
     )
     {
@@ -210,7 +210,7 @@ namespace ruya::render
             return current_handle;
 
         // texture doesn't exist, create one and return handle
-        Texture new_texture = generate_texture(vault.images[image_id]);
+        Texture new_texture = generate_texture(vault.image(image_id));
         gpu_vault.textures[image_id] = new_texture;
         return new_texture;
     }
