@@ -61,6 +61,7 @@ namespace gen = ruya::scene::gen;
 using std::vector;
 
 using glm::dvec2;
+using glm::ivec2;
 using glm::vec2;
 using glm::vec3;	
 
@@ -112,6 +113,10 @@ namespace
         inline constexpr int X = GLFW_KEY_X;
         inline constexpr int Y = GLFW_KEY_Y;
         inline constexpr int Z = GLFW_KEY_Z;
+        inline constexpr int UP = GLFW_KEY_UP;
+        inline constexpr int DOWN = GLFW_KEY_DOWN;
+        inline constexpr int LEFT = GLFW_KEY_LEFT;
+        inline constexpr int RIGHT = GLFW_KEY_RIGHT;
     }
 }
 
@@ -129,15 +134,23 @@ namespace ruya
         bool _allow_render_mode_change = true;
         RenderMode _render_mode = RenderMode::FILL;
         Renderer* _renderer;
+
+        // -------------------- snake state --------------------
         Timer _snek_timer;
         Vault _vault;
         Scene _scene;
         Model _snake_body_part;
+        std::vector<ivec2> _snek_pos;
         std::vector<entt::entity> _snek;
         float _remaining_cells{0.0f};
+        ivec2 _last_dir {.0f, .0f};
         const float CELL_SIZE = 1.0f;
         const float ROWS = 8;
         const float COLS = 12;
+        uint32_t _max_apples = 3;
+        uint32_t _apples_spawned = 0;
+        // -----------------------------------------------------
+
 
 
     public: // FUNCTIONS
@@ -227,7 +240,7 @@ namespace ruya
                         .specular_map = barrel_img_id_specular
                     },
                     .transform = Transform{
-                        .position = vec3{.0f},
+                        // .position = vec3{.0f},
                         .scale = vec3{1.0f, 1.0f, 1.0f}
                     }
                 }
@@ -236,6 +249,9 @@ namespace ruya
             _scene.registry.emplace<Model>(head_entity, snake_head);
             _snek.clear();
             _snek.push_back(head_entity);
+            _snek_pos.clear();
+            _snek_pos.push_back(ivec2{0, 0});
+
 
             // floor
             Model floor_model;
@@ -435,29 +451,36 @@ namespace ruya
         }
 
 
-        void update_snake_position()
+        bool key_pressed(int key)
         {
             GLFWwindow* glfw_window = _window.get_GLFW_window();
-            float step = .05f;
-            vec2 dir {0, 0}; // direction in the x and y axis, positive = right/up, negative = left/down, zero = neutral/still
-            if (glfwGetKey(glfw_window, Key::W) == GLFW_PRESS)
+            return glfwGetKey(glfw_window, key) == GLFW_PRESS;
+        }
+
+        void update_snake_position()
+        {
+            if (key_pressed(Key::W) || key_pressed(Key::UP))
             {
-                dir.y++;
+                if (_last_dir.y >= 0)
+                    _last_dir = {0, 1};
             }
             
-            if (glfwGetKey(glfw_window, Key::S) == GLFW_PRESS)
+            if (key_pressed(Key::S) || key_pressed(Key::DOWN))
             {
-                dir.y--;
+                if (_last_dir.y <= 0)
+                    _last_dir = {0, -1};
             }
             
-            if (glfwGetKey(glfw_window, Key::A) == GLFW_PRESS)
+            if (key_pressed(Key::A) || key_pressed(Key::LEFT))
             {
-                dir.x--;
+                if (_last_dir.x <= 0)
+                    _last_dir = {-1, 0};
             }
             
-            if (glfwGetKey(glfw_window, Key::D) == GLFW_PRESS)
+            if (key_pressed(Key::D) || key_pressed(Key::RIGHT))
             {
-                dir.x++;
+                if (_last_dir.x >= 0)
+                    _last_dir = {1, 0};
             }
 
             // movement speed
@@ -466,16 +489,18 @@ namespace ruya
             float seconds = static_cast<float>(_snek_timer.elapsed_time_s());
             float cells_to_move = cells_per_second * seconds;
             int move_now = static_cast<int>(std::trunc(cells_to_move));
-            _remaining_cells = cells_to_move - std::trunc(cells_to_move);
+            _remaining_cells = cells_to_move - std::trunc(cells_to_move); // TODO ??
 
             if (move_now == 0)
                 return;
 
-            float delta_x = dir.x * move_now * CELL_SIZE;
-            float delta_y = dir.y * move_now * CELL_SIZE;
+            ivec2 & head_pos = _snek_pos[0];
+            head_pos.x += _last_dir.x * move_now;
+            head_pos.y += _last_dir.y * move_now;
 
             Model& head = _scene.registry.get<Model>(_snek[0]);
-            head.elements[0].transform.position += vec3{delta_x, delta_y, 0};
+            head.elements[0].transform.position.x = head_pos.x * CELL_SIZE;
+            head.elements[0].transform.position.y = head_pos.y * CELL_SIZE;
             _snek_timer.start();
         }
 
