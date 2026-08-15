@@ -18,7 +18,6 @@ include(FetchContent)
 set(HEADERS
     app.h
     core/timer.h
-    core/uuid.h
     io/window.h
     io/stb_image.h
     render/renderer.h
@@ -26,11 +25,12 @@ set(HEADERS
     scene/camera.h
     scene/material.h
     scene/mesh.h
-)
+    )
     
-set(SOURCES
+    set(SOURCES
     # main.cpp
     # test_app.hpp
+    core/utils.hpp
     core/math/transform.hpp
     core/timer.cpp
     io/window.cpp

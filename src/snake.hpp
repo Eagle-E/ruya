@@ -40,6 +40,7 @@
 #include "io/paths.hpp"
 #include "app.h"
 #include "core/timer.h"
+#include "core/utils.hpp"
 #include "io/window.h"
 #include "render/shader.h"
 #include "scene/mesh.h"
@@ -63,6 +64,7 @@ using std::vector;
 using glm::dvec2;
 using glm::ivec2;
 using glm::vec2;
+using glm::ivec3;
 using glm::vec3;	
 
 using ruya::Camera;			                        
@@ -134,10 +136,11 @@ namespace ruya
         bool _allow_render_mode_change = true;
         RenderMode _render_mode = RenderMode::FILL;
         Renderer* _renderer;
-
+        
         // -------------------- snake state --------------------
-        Timer _snek_timer;
         Vault _vault;
+        Timer _snek_timer_movement;
+        Timer _snek_timer_apples;
         Scene _scene;
         Model _snake_body_part;
         std::vector<ivec2> _snek_pos;
@@ -147,8 +150,8 @@ namespace ruya
         const float CELL_SIZE = 1.0f;
         const float ROWS = 8;
         const float COLS = 12;
-        uint32_t _max_apples = 3;
-        uint32_t _apples_spawned = 0;
+        uint32_t _max_apples = 10;
+        std::vector<ivec2> _apple_locs;
         // -----------------------------------------------------
 
 
@@ -338,7 +341,8 @@ namespace ruya
 
             // MAIN LOOP
             _frame_output_timer.start();
-            _snek_timer.start();
+            _snek_timer_movement.start();
+            _snek_timer_apples.start();
             while (!_window.should_close())
             {
                 _frame_timer.start();
@@ -361,6 +365,9 @@ namespace ruya
                 // calc FPS
                 log_fps();
                 poll_and_process_events();
+
+                // game logic
+                spawn_apples();
             }
 
             // cleanup
@@ -369,22 +376,23 @@ namespace ruya
         }
 
 
-
-        void log_fps()
+        ivec2 random_position(ivec2 bound_min, ivec2 bound_max)
         {
-            _frame_timer.stop();
-            double frameTime = _frame_timer.elapsed_time_s();
-            double fps = 1 / frameTime;
-            //double fps = frameTime;
-
-            if (_frame_output_timer.elapsed_time_s() > 1.0)
-            {
-                std::cout << fps << " fps"
-                    << "\tElapsed time: " << _frame_output_timer.time_since_creation_s() << "s" 
-                    << "\tmouse pos: ("<< _old_mouse_pos.x <<","<< _old_mouse_pos.y <<")\n";
-                _frame_output_timer.start();
-            }
+            int x = rand_int(bound_min.x, bound_max.x);
+            int y = rand_int(bound_min.y, bound_max.y);
+            return ivec2{x, y};
         }
+
+
+        void spawn_apples()
+        {
+            if (_apple_locs.size() >= _max_apples)
+                return;
+            
+            ivec2 new_pos = random_position(ivec2{0}, ivec2{ROWS, COLS});
+            _apple_locs.push_back(new_pos);
+        }
+        
 
         void poll_and_process_events()
         {
@@ -484,9 +492,9 @@ namespace ruya
             }
 
             // movement speed
-            _snek_timer.stop();
+            _snek_timer_movement.stop();
             float cells_per_second = 2;
-            float seconds = static_cast<float>(_snek_timer.elapsed_time_s());
+            float seconds = static_cast<float>(_snek_timer_movement.elapsed_time_s());
             float cells_to_move = cells_per_second * seconds;
             int move_now = static_cast<int>(std::trunc(cells_to_move));
             _remaining_cells = cells_to_move - std::trunc(cells_to_move); // TODO ??
@@ -501,7 +509,7 @@ namespace ruya
             Model& head = _scene.registry.get<Model>(_snek[0]);
             head.elements[0].transform.position.x = head_pos.x * CELL_SIZE;
             head.elements[0].transform.position.y = head_pos.y * CELL_SIZE;
-            _snek_timer.start();
+            _snek_timer_movement.start();
         }
 
         void update_camera_position()
@@ -606,6 +614,22 @@ namespace ruya
             _camera.update_angle(deltaPos.x * turnSpeed, deltaPos.y * turnSpeed);
 
             _old_mouse_pos = pos;
+        }
+    
+        void log_fps()
+        {
+            _frame_timer.stop();
+            double frameTime = _frame_timer.elapsed_time_s();
+            double fps = 1 / frameTime;
+            //double fps = frameTime;
+
+            if (_frame_output_timer.elapsed_time_s() > 1.0)
+            {
+                std::cout << fps << " fps"
+                    << "\tElapsed time: " << _frame_output_timer.time_since_creation_s() << "s" 
+                    << "\tmouse pos: ("<< _old_mouse_pos.x <<","<< _old_mouse_pos.y <<")\n";
+                _frame_output_timer.start();
+            }
         }
     };
 }

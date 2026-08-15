@@ -2,7 +2,6 @@
 #define LIGHT_H
 
 #include "scene/components.hpp"
-#include "core/uuid.h"
 #include <glm/glm.hpp>
 
 using glm::vec3;
