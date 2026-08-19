@@ -141,17 +141,18 @@ namespace ruya
         Vault _vault;
         Timer _snek_timer_movement;
         Timer _snek_timer_apples;
-        Scene _scene;
-        Model _snake_body_part;
-        std::vector<ivec2> _snek_pos;
-        std::vector<entt::entity> _snek;
-        float _remaining_cells{0.0f};
-        ivec2 _last_dir {.0f, .0f};
-        const float CELL_SIZE = 1.0f;
-        const float ROWS = 8;
-        const float COLS = 12;
-        uint32_t _max_apples = 10;
-        std::vector<ivec2> _apple_locs;
+        Scene _scene; // GRAPHICS
+        Model _snake_body_part; // GRAPHICS
+        std::vector<ivec2> _snek_pos; // GAME STATE
+        std::vector<entt::entity> _snek; // GRAPHICS
+        float _remaining_cells{0.0f}; // GRAPHICS
+        ivec2 _last_dir {.0f, .0f}; // ?
+        const float CELL_SIZE = 1.0f; // GRAPHICS
+        const float ROWS = 8; // GAME STATE
+        const float COLS = 12; // GAME STATE
+        uint32_t _max_apples = 3; // GAME STATE
+        std::vector<ivec2> _apple_locs; // GAME STATE
+        std::vector<entt::entity> _apples; // GRAPHICS
         // -----------------------------------------------------
 
 
@@ -359,7 +360,6 @@ namespace ruya
                 ruya::ui::render_frame();
 
                 // update frame => swaps buffers = starts showing newly rendered buffer
-                // + checks for input events and calls handlers
                 _window.update();
 
                 // calc FPS
@@ -367,7 +367,11 @@ namespace ruya
                 poll_and_process_events();
 
                 // game logic
+                step();
                 spawn_apples();
+
+
+                // TODO: separate game state from graphics state and add a sync phase
             }
 
             // cleanup
@@ -375,6 +379,22 @@ namespace ruya
             glfwTerminate(); // clean up all reasources allocated by glfw.
         }
 
+
+        void step()
+        {
+            // check if snake head overlaps with body
+            // TODO game over
+
+            // check if snake head overlaps with an apple
+            ivec2 head_pos = _snek_pos[0];
+            for (auto apple_pos : _apple_locs)
+            {
+                if (head_pos == apple_pos)
+                {
+                    // TODO: consume apply + grow
+                }
+            }
+        }
 
         ivec2 random_position(ivec2 bound_min, ivec2 bound_max)
         {
@@ -387,10 +407,30 @@ namespace ruya
         void spawn_apples()
         {
             if (_apple_locs.size() >= _max_apples)
-                return;
+            return;
             
+            // TODO: move location storage of apples to entt
             ivec2 new_pos = random_position(ivec2{0}, ivec2{ROWS, COLS});
             _apple_locs.push_back(new_pos);
+
+            // create and register the apple entity
+            Model apple_model;
+            apple_model.elements.push_back(
+                Element{
+                    .mesh = _vault.mesh_cache["gen::cube"],
+                    .material = Phong{
+                        .diffuse = vec3{1.0f, 0.0f, 0.0f},
+                    },
+                    .transform = Transform{
+                        .position = vec3{new_pos.x * CELL_SIZE, new_pos.y * CELL_SIZE, 0.0f},
+                        .scale = vec3{0.75f, 0.75f, 0.75f}
+                    }
+                }
+            );
+
+            auto apple_entity = _scene.registry.create();
+            _scene.registry.emplace<Model>(apple_entity, apple_model);
+            _apples.push_back(apple_entity);
         }
         
 
