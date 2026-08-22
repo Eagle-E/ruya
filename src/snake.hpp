@@ -139,20 +139,24 @@ namespace ruya
         
         // -------------------- snake state --------------------
         Vault _vault;
-        Timer _snek_timer_movement;
-        Timer _snek_timer_apples;
         Scene _scene; // GRAPHICS
+        
         Model _snake_body_part; // GRAPHICS
-        std::vector<ivec2> _snek_pos; // GAME STATE
         std::vector<entt::entity> _snek; // GRAPHICS
+        std::vector<ivec2> _snek_pos; // GAME STATE
+        
+        Timer _snek_timer_apples;
+        uint32_t _max_apples = 3; // GAME STATE
+        std::vector<ivec2> _apple_locs; // GAME STATE
+        std::vector<entt::entity> _apples; // GRAPHICS
+        
+        Timer _snek_timer_movement;
         float _remaining_cells{0.0f}; // GRAPHICS
         ivec2 _last_dir {.0f, .0f}; // ?
         const float CELL_SIZE = 1.0f; // GRAPHICS
         const float ROWS = 8; // GAME STATE
         const float COLS = 12; // GAME STATE
-        uint32_t _max_apples = 3; // GAME STATE
-        std::vector<ivec2> _apple_locs; // GAME STATE
-        std::vector<entt::entity> _apples; // GRAPHICS
+        
         // -----------------------------------------------------
 
 
@@ -361,23 +365,25 @@ namespace ruya
 
                 // game logic
                 step();
-                spawn_apples();
-
-
+                
+                
                 // TODO: separate game state from graphics state and add a sync phase
             }
-
+            
             // cleanup
             ruya::ui::shutdown();
             glfwTerminate(); // clean up all reasources allocated by glfw.
         }
-
-
+        
+        
+        /** A single step in the snake game
+         * TODO: game over
+         */
         void step()
         {
             // check if snake head overlaps with body
-            // TODO game over
-
+            // TODO impl
+            
             // check if snake head overlaps with an apple
             ivec2 head_pos = _snek_pos[0];
             for (auto apple_pos : _apple_locs)
@@ -387,6 +393,8 @@ namespace ruya
                     // TODO: consume apply + grow
                 }
             }
+
+            spawn_apple();
         }
 
         ivec2 random_position(ivec2 bound_min, ivec2 bound_max)
@@ -397,7 +405,13 @@ namespace ruya
         }
 
 
-        void spawn_apples()
+        /** Spawns a single apple on the map
+         * TODO: fix apples spawning outside the map
+         * TODO: make sure apples don't spawn on top of each other
+         * TODO: make sure an apple doesn't spawn on the snake
+         * TODO: create apple component and manage data in entt
+         */
+        void spawn_apple()
         {
             if (_apple_locs.size() >= _max_apples)
             return;
