@@ -417,6 +417,13 @@ namespace ruya
             entt::entity new_part_entity = _scene.registry.create();
             _scene.registry.emplace<Model>(new_part_entity, _snake_body_part);
             _snek.push_back(new_part_entity);
+
+            // sync snake part coordinate with world position
+            _scene.registry.get<Model>(new_part_entity).elements[0].transform.position = vec3{
+                body_part_loc.x * CELL_SIZE,
+                body_part_loc.y * CELL_SIZE,
+                0
+            };
         }
 
         void input_system(entt::registry registry)
