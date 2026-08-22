@@ -274,6 +274,41 @@ namespace ruya
             auto floor_entity = _scene.registry.create();
             _scene.registry.emplace<Model>(floor_entity, floor_model);
 
+            // walls
+            Model wall;
+            wall.elements.push_back(
+                Element{
+                    .mesh = _vault.mesh_cache["gen::cube"],
+                    .material = Phong{
+                        .diffuse = vec3{0.7f, 0.7f, 0.3f},
+                        .specular = vec3{0.0f},
+                    }
+                }
+            );
+            auto top_wall_entity = _scene.registry.create();
+            _scene.registry.emplace<Model>(top_wall_entity, wall);
+            _scene.registry.get<Model>(top_wall_entity).elements[0].transform = Transform{
+                .position = vec3{COLS*CELL_SIZE/2, (ROWS+1)*CELL_SIZE, 0},
+                .scale = vec3{COLS*CELL_SIZE, CELL_SIZE, 1.0f}
+            };
+            auto bottom_wall_entity = _scene.registry.create();
+            _scene.registry.emplace<Model>(bottom_wall_entity, wall);
+            _scene.registry.get<Model>(bottom_wall_entity).elements[0].transform = Transform{
+                .position = vec3{COLS*CELL_SIZE/2, -CELL_SIZE, 0},
+                .scale = vec3{COLS*CELL_SIZE, CELL_SIZE, 1.0f}
+            };
+            auto right_wall_entity = _scene.registry.create();
+            _scene.registry.emplace<Model>(right_wall_entity, wall);
+            _scene.registry.get<Model>(right_wall_entity).elements[0].transform = Transform{
+                .position = vec3{(COLS+1)*CELL_SIZE, ROWS*CELL_SIZE/2, 0},
+                .scale = vec3{CELL_SIZE, ROWS*CELL_SIZE, 1.0f}
+            };
+            auto left_wall_entity = _scene.registry.create();
+            _scene.registry.emplace<Model>(left_wall_entity, wall);
+            _scene.registry.get<Model>(left_wall_entity).elements[0].transform = Transform{
+                .position = vec3{-CELL_SIZE, ROWS*CELL_SIZE/2, 0},
+                .scale = vec3{CELL_SIZE, ROWS*CELL_SIZE, 1.0f}
+            };
 
             // directional light
             DirectionalLight dir_light {
