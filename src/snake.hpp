@@ -419,6 +419,11 @@ namespace ruya
             _snek.push_back(new_part_entity);
         }
 
+        void input_system(entt::registry registry)
+        {
+            // TODO: check inputs and set state related to the snake input (e.g. direction)
+        }
+
         /** A single step in the snake game
          * TODO: game over
          */
@@ -443,7 +448,7 @@ namespace ruya
                     _scene.registry.destroy(apple_to_destroy);
                     
                     // grow snake
-                    // spawn_snake_body_part(_snek_pos.back());
+                    spawn_snake_body_part(_snek_pos.back());
 
                     break;
                 }
@@ -604,13 +609,33 @@ namespace ruya
             if (move_now == 0)
                 return;
 
-            ivec2 & head_pos = _snek_pos[0];
-            head_pos.x += _last_dir.x * move_now;
-            head_pos.y += _last_dir.y * move_now;
-
-            Model& head = _scene.registry.get<Model>(_snek[0]);
-            head.elements[0].transform.position.x = head_pos.x * CELL_SIZE;
-            head.elements[0].transform.position.y = head_pos.y * CELL_SIZE;
+            // Update coordinates of each snek part
+            ivec2 prev_pos;
+            for (auto [idx, pos] : std::views::enumerate(_snek_pos))
+            {
+                if (idx == 0)
+                {
+                    prev_pos = pos;
+                    pos.x += _last_dir.x * move_now;
+                    pos.y += _last_dir.y * move_now;
+                }
+                else
+                {
+                    ivec2 pos_for_next_part = pos;
+                    pos.x = prev_pos.x;
+                    pos.y = prev_pos.y;
+                    prev_pos = pos_for_next_part;
+                }
+            }
+            
+            
+            // update world coordinate of snek based on the 2d coordinates
+            for (auto [idx, pos] : std::views::enumerate(_snek_pos))
+            {
+                Model& head = _scene.registry.get<Model>(_snek[idx]);
+                head.elements[0].transform.position.x = pos.x * CELL_SIZE;
+                head.elements[0].transform.position.y = pos.y * CELL_SIZE;
+            }
             _snek_timer_movement.start();
         }
 
