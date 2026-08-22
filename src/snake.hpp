@@ -147,13 +147,14 @@ namespace ruya
         std::vector<ivec2> _snek_pos; // GAME STATE
         
         Timer _snek_timer_apples;
-        uint32_t _max_apples = 3; // GAME STATE
+        uint32_t _max_apples = 6; // GAME STATE
         std::vector<ivec2> _apple_locs; // GAME STATE
         std::vector<entt::entity> _apples; // GRAPHICS
         
         Timer _snek_timer_movement;
         float _remaining_cells{0.0f}; // GRAPHICS
         ivec2 _last_dir {.0f, .0f}; // ?
+        const float CELLS_PER_SECOND = 4;
         const float CELL_SIZE = 1.0f; // GRAPHICS
         const float ROWS = 8; // GAME STATE
         const float COLS = 12; // GAME STATE
@@ -607,12 +608,11 @@ namespace ruya
 
             // movement speed
             _snek_timer_movement.stop();
-            float cells_per_second = 2;
             float seconds = static_cast<float>(_snek_timer_movement.elapsed_time_s());
-            float cells_to_move = cells_per_second * seconds;
-            int move_now = static_cast<int>(std::trunc(cells_to_move));
-            _remaining_cells = cells_to_move - std::trunc(cells_to_move); // TODO ??
-
+            float cells_to_move = CELLS_PER_SECOND * seconds;// + _remaining_cells;
+            float move_now_f = std::trunc(cells_to_move);
+            int move_now = static_cast<int>(move_now_f);
+            // _remaining_cells = cells_to_move - move_now_f; // TODO ??
             if (move_now == 0)
                 return;
 
