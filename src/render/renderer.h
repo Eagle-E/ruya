@@ -64,6 +64,7 @@ namespace ruya::render
 		static void GLAPIENTRY debug_mesage_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, 
 														const GLchar* message, const void* userParam);
 
+        void clear_frame_buffer(glm::vec3 color);
 		void render_models(entt::registry& registry, Vault& vault, const mat4& VP, Shader& activeShader);
 		void render_light_source(vec3 position, vec3 color, Model& model, const mat4& VP, Vault& vault);
 		void draw_mesh(MeshID mesh, Vault& vault);

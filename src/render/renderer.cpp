@@ -46,8 +46,16 @@ ruya::render::Renderer::~Renderer()
 {
 }
 
+void ruya::render::Renderer::clear_frame_buffer(glm::vec3 color)
+{
+    glClearColor(color.r, color.g, color.b, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
 void ruya::render::Renderer::render_scene(Scene& scene, Vault& vault)
 {
+    clear_frame_buffer(scene.background_color);
+    
 	// OBJECTS
 	// activate object shader to render objects
 	Shader* active_object_shader = nullptr;

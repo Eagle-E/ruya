@@ -159,12 +159,6 @@ namespace ruya
 
     public: // FUNCTIONS
 
-        void clear_frame_buffer(glm::vec3 color)
-        {
-            glClearColor(color.r, color.g, color.b, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        }
-
         /*** MAINLOOP ***/
         void run()
         {
@@ -355,7 +349,6 @@ namespace ruya
                 }
                 
 				// RENDER!!!
-                clear_frame_buffer(_scene.background_color);
                 renderer.render_scene(_scene, _vault);
                 ruya::ui::render_frame();
 
