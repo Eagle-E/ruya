@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 #include <cmath>
+#include <ranges>
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -375,7 +376,14 @@ namespace ruya
             glfwTerminate(); // clean up all reasources allocated by glfw.
         }
         
-        
+        void spawn_snake_body_part(ivec2 body_part_loc)
+        {
+            _snek_pos.push_back(body_part_loc);
+            entt::entity new_part_entity = _scene.registry.create();
+            _scene.registry.emplace<Model>(new_part_entity, _snake_body_part);
+            _snek.push_back(new_part_entity);
+        }
+
         /** A single step in the snake game
          * TODO: game over
          */
@@ -386,14 +394,27 @@ namespace ruya
             
             // check if snake head overlaps with an apple
             ivec2 head_pos = _snek_pos[0];
-            for (auto apple_pos : _apple_locs)
+            for (auto [idx, apple_pos] : std::views::enumerate(_apple_locs))
             {
                 if (head_pos == apple_pos)
                 {
                     // TODO: consume apply + grow
+                    // consume apple
+                    std::swap(_apple_locs[idx], _apple_locs.back());
+                    _apple_locs.pop_back();
+                    std::swap(_apples[idx], _apples.back());
+                    entt::entity apple_to_destroy = _apples.back();
+                    _apples.pop_back();
+                    _scene.registry.destroy(apple_to_destroy);
+                    
+                    // grow snake
+                    // spawn_snake_body_part(_snek_pos.back());
+                    
+                    break;
                 }
             }
 
+            update_snake_position();
             spawn_apple();
         }
 
@@ -473,7 +494,6 @@ namespace ruya
             if (!imgui_io.WantCaptureMouse) 
             {
                 // update_camera_position();
-                update_snake_position();
                 update_camera_look_direction();
                 update_render_mode();
             }

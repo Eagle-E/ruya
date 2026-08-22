@@ -27,6 +27,7 @@ namespace ruya::scene
     struct Model
     {
         // TODO: add Transform component?
+        // TODO: remove std::vector -> not cache friendly (each vector does heap allocation)!
         std::vector<Element> elements;
     };
 }
