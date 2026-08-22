@@ -409,7 +409,7 @@ namespace ruya
                     
                     // grow snake
                     // spawn_snake_body_part(_snek_pos.back());
-                    
+
                     break;
                 }
             }
@@ -438,7 +438,7 @@ namespace ruya
             return;
             
             // TODO: move location storage of apples to entt
-            ivec2 new_pos = random_position(ivec2{0}, ivec2{ROWS, COLS});
+            ivec2 new_pos = random_position(ivec2{0}, ivec2{COLS, ROWS});
             _apple_locs.push_back(new_pos);
 
             // create and register the apple entity
