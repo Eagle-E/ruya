@@ -65,6 +65,7 @@ using ruya::scene::Scene;
 using ruya::scene::Vault;
 using ruya::scene::materials::Phong;
 using ruya::scene::materials::PhongMaterials;
+using ruya::io::Window;
 
 namespace ruya
 {

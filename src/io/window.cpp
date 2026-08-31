@@ -17,7 +17,7 @@ namespace
 
 
 
-ruya::Window::Window(int width, int height)
+ruya::io::Window::Window(int width, int height)
 	: _width(width), _height(height)
 {
 	glfwSetErrorCallback(glfw_error_callback);
@@ -60,7 +60,7 @@ ruya::Window::Window(int width, int height)
     set_cursor_mode(_cursor_mode);
 }
 
-void ruya::Window::set_cursor_mode(CursorMode mode)
+void ruya::io::Window::set_cursor_mode(CursorMode mode)
 {
     _cursor_mode = mode;
     auto glfw_cursor_mode = GLFW_CURSOR_DISABLED;
@@ -84,7 +84,7 @@ void ruya::Window::set_cursor_mode(CursorMode mode)
 }
 
 
-ruya::Window::~Window()
+ruya::io::Window::~Window()
 {
     // ImGui_ImplOpenGL3_Shutdown();
     // ImGui_ImplGlfw_Shutdown();
@@ -94,12 +94,12 @@ ruya::Window::~Window()
 	glfwTerminate(); // TODO: should this be removed in case multiple windows are being used ?
 }
 
-GLFWwindow* ruya::Window::get_GLFW_window()
+GLFWwindow* ruya::io::Window::get_GLFW_window()
 {
 	return _glfw_window;
 }
 
-void ruya::Window::update()
+void ruya::io::Window::update()
 {
 	// update frame
 	glfwSwapBuffers(_glfw_window); // swap buffer to the new to-be-rendered buffer
@@ -109,12 +109,12 @@ void ruya::Window::update()
 }
 
 
-void ruya::Window::resize_callback_static(GLFWwindow* window, int width, int height)
+void ruya::io::Window::resize_callback_static(GLFWwindow* window, int width, int height)
 {
 	static_cast<Window*>(glfwGetWindowUserPointer(window))->resize_callback(window, width, height);
 }
 
-void ruya::Window::resize_callback(GLFWwindow* window, int width, int height)
+void ruya::io::Window::resize_callback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
 	_width = width;

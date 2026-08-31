@@ -25,6 +25,7 @@ using ruya::scene::DirectionalLight;
 using ruya::scene::PointLight;
 using ruya::scene::Vault;
 using ruya::scene::materials::Phong;
+using ruya::io::Window;
 
 using std::list;
 using glm::mat4;	using glm::mat3;

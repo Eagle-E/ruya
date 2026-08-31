@@ -20,7 +20,7 @@
 
 using glm::mat4;
 using ruya::Camera;
-using ruya::Window;
+using ruya::io::Window;
 using ruya::render::MeshGPU;
 using ruya::render::Shader;
 using ruya::scene::Element;

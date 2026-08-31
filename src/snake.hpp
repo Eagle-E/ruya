@@ -84,43 +84,46 @@ using ruya::scene::Scene;
 using ruya::scene::Vault;
 using ruya::scene::materials::Phong;
 using ruya::scene::materials::PhongMaterials;
+using ruya::io::Window;
+using ruya::io::key_pressed;
+using ruya::io::Key;
 
 namespace
 {
     enum class RenderMode { FILL, WIREFRAME };
 
-    namespace Key {
-        inline constexpr int A = GLFW_KEY_A;
-        inline constexpr int B = GLFW_KEY_B;
-        inline constexpr int C = GLFW_KEY_C;
-        inline constexpr int D = GLFW_KEY_D;
-        inline constexpr int E = GLFW_KEY_E;
-        inline constexpr int F = GLFW_KEY_F;
-        inline constexpr int G = GLFW_KEY_G;
-        inline constexpr int H = GLFW_KEY_H;
-        inline constexpr int I = GLFW_KEY_I;
-        inline constexpr int J = GLFW_KEY_J;
-        inline constexpr int K = GLFW_KEY_K;
-        inline constexpr int L = GLFW_KEY_L;
-        inline constexpr int M = GLFW_KEY_M;
-        inline constexpr int N = GLFW_KEY_N;
-        inline constexpr int O = GLFW_KEY_O;
-        inline constexpr int P = GLFW_KEY_P;
-        inline constexpr int Q = GLFW_KEY_Q;
-        inline constexpr int R = GLFW_KEY_R;
-        inline constexpr int S = GLFW_KEY_S;
-        inline constexpr int T = GLFW_KEY_T;
-        inline constexpr int U = GLFW_KEY_U;
-        inline constexpr int V = GLFW_KEY_V;
-        inline constexpr int W = GLFW_KEY_W;
-        inline constexpr int X = GLFW_KEY_X;
-        inline constexpr int Y = GLFW_KEY_Y;
-        inline constexpr int Z = GLFW_KEY_Z;
-        inline constexpr int UP = GLFW_KEY_UP;
-        inline constexpr int DOWN = GLFW_KEY_DOWN;
-        inline constexpr int LEFT = GLFW_KEY_LEFT;
-        inline constexpr int RIGHT = GLFW_KEY_RIGHT;
-    }
+    // namespace Key {
+    //     inline constexpr int A = GLFW_KEY_A;
+    //     inline constexpr int B = GLFW_KEY_B;
+    //     inline constexpr int C = GLFW_KEY_C;
+    //     inline constexpr int D = GLFW_KEY_D;
+    //     inline constexpr int E = GLFW_KEY_E;
+    //     inline constexpr int F = GLFW_KEY_F;
+    //     inline constexpr int G = GLFW_KEY_G;
+    //     inline constexpr int H = GLFW_KEY_H;
+    //     inline constexpr int I = GLFW_KEY_I;
+    //     inline constexpr int J = GLFW_KEY_J;
+    //     inline constexpr int K = GLFW_KEY_K;
+    //     inline constexpr int L = GLFW_KEY_L;
+    //     inline constexpr int M = GLFW_KEY_M;
+    //     inline constexpr int N = GLFW_KEY_N;
+    //     inline constexpr int O = GLFW_KEY_O;
+    //     inline constexpr int P = GLFW_KEY_P;
+    //     inline constexpr int Q = GLFW_KEY_Q;
+    //     inline constexpr int R = GLFW_KEY_R;
+    //     inline constexpr int S = GLFW_KEY_S;
+    //     inline constexpr int T = GLFW_KEY_T;
+    //     inline constexpr int U = GLFW_KEY_U;
+    //     inline constexpr int V = GLFW_KEY_V;
+    //     inline constexpr int W = GLFW_KEY_W;
+    //     inline constexpr int X = GLFW_KEY_X;
+    //     inline constexpr int Y = GLFW_KEY_Y;
+    //     inline constexpr int Z = GLFW_KEY_Z;
+    //     inline constexpr int UP = GLFW_KEY_UP;
+    //     inline constexpr int DOWN = GLFW_KEY_DOWN;
+    //     inline constexpr int LEFT = GLFW_KEY_LEFT;
+    //     inline constexpr int RIGHT = GLFW_KEY_RIGHT;
+    // }
 }
 
 namespace ruya
@@ -574,33 +577,45 @@ namespace ruya
         }
 
 
-        bool key_pressed(int key)
-        {
-            GLFWwindow* glfw_window = _window.get_GLFW_window();
-            return glfwGetKey(glfw_window, key) == GLFW_PRESS;
-        }
+        // bool key_pressed(int key)
+        // {
+        //     GLFWwindow* glfw_window = _window.get_GLFW_window();
+        //     return glfwGetKey(glfw_window, key) == GLFW_PRESS;
+        // }
 
         void update_snake_position()
         {
-            if (key_pressed(Key::W) || key_pressed(Key::UP))
+            auto _pressed = [&window = _window](Key k){
+                return key_pressed(window, k);
+            };
+
+            if(_pressed(Key::W) || _pressed(Key::UP))
+            // if(key_pressed(_window, Key::W))
+            // if (key_pressed(Key::W) || key_pressed(Key::UP))
             {
                 if (_last_dir.y >= 0)
-                    _last_dir = {0, 1};
+                _last_dir = {0, 1};
             }
             
-            if (key_pressed(Key::S) || key_pressed(Key::DOWN))
+            if(_pressed(Key::S) || _pressed(Key::DOWN))
+            // if(key_pressed(_window, Key::S))
+            // if (key_pressed(Key::S) || key_pressed(Key::DOWN))
             {
                 if (_last_dir.y <= 0)
-                    _last_dir = {0, -1};
+                _last_dir = {0, -1};
             }
             
-            if (key_pressed(Key::A) || key_pressed(Key::LEFT))
+            if(_pressed(Key::A) || _pressed(Key::LEFT))
+            // if(key_pressed(_window, Key::A))
+            // if (key_pressed(Key::A) || key_pressed(Key::LEFT))
             {
                 if (_last_dir.x <= 0)
-                    _last_dir = {-1, 0};
+                _last_dir = {-1, 0};
             }
             
-            if (key_pressed(Key::D) || key_pressed(Key::RIGHT))
+            if(_pressed(Key::D) || _pressed(Key::RIGHT))
+            // if(key_pressed(_window, Key::D))
+            // if (key_pressed(Key::D) || key_pressed(Key::RIGHT))
             {
                 if (_last_dir.x >= 0)
                     _last_dir = {1, 0};
