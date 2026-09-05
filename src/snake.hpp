@@ -127,7 +127,9 @@ namespace ruya
         const float CELL_SIZE = 1.0f; // GRAPHICS
         const float ROWS = 8; // GAME STATE
         const float COLS = 12; // GAME STATE
-        
+
+        bool _game_over = false; //GAME STATE
+        ivec2 _next_spawn_loc{0};
         // -----------------------------------------------------
 
 
@@ -311,6 +313,7 @@ namespace ruya
                 // game logic
                 input_system(_scene.registry);
                 step();
+                game_over_system();
                 // TODO: separate game state from graphics state and add a sync phase
             }
             
@@ -350,16 +353,40 @@ namespace ruya
             }
         }
 
-        
+        void game_over_system()
+        {
+            // head out of bounds
+            int x = _snek_pos[0].x;
+            int y = _snek_pos[0].y;
+            if (x < 0 || x > COLS || y < 0 || y > ROWS)
+            {
+                _game_over = true;
+                return;
+            }
+
+            // snake head overlaps with body
+            for (auto i = 1; i < _snek_pos.size(); i++)
+            {
+                int x2 = _snek_pos[i].x;
+                int y2 = _snek_pos[i].y;
+                if (x == x2 && y ==  y2)
+                {
+                    _game_over = true;
+                    return;
+                }    
+            }
+        }
 
         /** A single step in the snake game
-         * TODO: game over
          */
         void step()
         {
-            // check if snake head overlaps with body
-            // TODO impl
-            
+            if (_game_over)
+            {
+                _window.set_should_close(true);
+                return;
+            }
+
             // check if snake head overlaps with an apple
             ivec2 head_pos = _snek_pos[0];
             for (auto [idx, apple_pos] : std::views::enumerate(_apple_locs))
@@ -376,7 +403,7 @@ namespace ruya
                     _scene.registry.destroy(apple_to_destroy);
                     
                     // grow snake
-                    spawn_snake_body_part(_snek_pos.back());
+                    spawn_snake_body_part(_next_spawn_loc);
 
                     break;
                 }
@@ -474,6 +501,9 @@ namespace ruya
             if (move_now == 0)
                 return;
 
+            // set the next position where a body would spawn to the tail of the snake
+            _next_spawn_loc = _snek_pos.back();
+
             // Update coordinates of each snek part
             ivec2 prev_pos;
             for (auto [idx, pos] : std::views::enumerate(_snek_pos))
@@ -483,6 +513,8 @@ namespace ruya
                     prev_pos = pos;
                     pos.x += _last_dir.x * move_now;
                     pos.y += _last_dir.y * move_now;
+                    std::cout << _snek_pos[0].x << ", " << _snek_pos[0].y << std::endl;
+
                 }
                 else
                 {
@@ -508,6 +540,7 @@ namespace ruya
                 // head.elements[0].transform.position.y = pos.y * CELL_SIZE;
             }
             _snek_timer_movement.start();
+
         }
     };
 }
