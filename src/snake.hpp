@@ -100,8 +100,6 @@ namespace ruya
     {
     private: // VARIABLES
         Camera _camera;
-        Timer _frame_timer;
-        Timer _frame_output_timer;
         Window _window {1450, 875};
         dvec2 _old_mouse_pos {-1.0, -1.0};
         bool _allow_shading_mode_change = true;
@@ -291,69 +289,14 @@ namespace ruya
             };
             auto light_entity3 = _scene.registry.create();
             _scene.registry.emplace<DirectionalLight>(light_entity3, dir_light);
-
-            // point lights
-            // float d = 11.0f;
-            // PointLight point_light_tl {.position {0, d, 0.0f}};
-            // PointLight point_light_tr {.position {d, d, 0.0f}};
-            // PointLight point_light_bl {.position {0, 0, 0.0f}};
-            // PointLight point_light_br {.position {d, 0, 0.0f}};
-            // PointLight point_light_tm {.position {d/2, d, 0.0f}};
-            // PointLight point_light_rm {.position {d, d/2, 0.0f}};
-            // PointLight point_light_bm {.position {d/2, 0, 0.0f}};
-            // PointLight point_light_lm {.position {0, d/2, 0.0f}};
-            // Model point_light_model
-            // {
-            //     .elements = {
-            //         Element{
-            //             .mesh = _vault.mesh_cache["gen::cube"],
-            //             .material = Phong{},
-            //             .transform = Transform{
-            //                 .position = vec3{0},
-            //                 .rotation = vec3(0),
-            //                 .scale = vec3(1.0f)
-            //             }
-            //         }
-            //     }
-            // };
-            // auto point_light_entity_0 = _scene.registry.create();
-            // auto point_light_entity_1 = _scene.registry.create();
-            // auto point_light_entity_2 = _scene.registry.create();
-            // auto point_light_entity_3 = _scene.registry.create();
-            // auto point_light_entity_4 = _scene.registry.create();
-            // auto point_light_entity_5 = _scene.registry.create();
-            // auto point_light_entity_6 = _scene.registry.create();
-            // auto point_light_entity_7 = _scene.registry.create();
-            // _scene.registry.emplace<PointLight>(point_light_entity_0, point_light_tl);
-            // _scene.registry.emplace<PointLight>(point_light_entity_1, point_light_tr);
-            // _scene.registry.emplace<PointLight>(point_light_entity_2, point_light_bl);
-            // _scene.registry.emplace<PointLight>(point_light_entity_3, point_light_br);
-            // _scene.registry.emplace<PointLight>(point_light_entity_4, point_light_tm);
-            // _scene.registry.emplace<PointLight>(point_light_entity_5, point_light_rm);
-            // _scene.registry.emplace<PointLight>(point_light_entity_6, point_light_bm);
-            // _scene.registry.emplace<PointLight>(point_light_entity_7, point_light_lm);
-            // _scene.registry.emplace<Model>(point_light_entity_0, point_light_model);
-            // _scene.registry.emplace<Model>(point_light_entity_1, point_light_model);
-            // _scene.registry.emplace<Model>(point_light_entity_2, point_light_model);
-            // _scene.registry.emplace<Model>(point_light_entity_3, point_light_model);
-            // _scene.registry.emplace<Model>(point_light_entity_4, point_light_model);
-            // _scene.registry.emplace<Model>(point_light_entity_5, point_light_model);
-            // _scene.registry.emplace<Model>(point_light_entity_6, point_light_model);
-            // _scene.registry.emplace<Model>(point_light_entity_7, point_light_model);
-            // ----------------------------------------------------------------------------------------------------
-            
-
             _camera.set_position(vec3{5, 5, 17.5f});
         	ruya::ui::initialize(_window.get_GLFW_window());
 
             // MAIN LOOP
-            _frame_output_timer.start();
             _snek_timer_movement.start();
             _snek_timer_apples.start();
             while (!_window.should_close())
             {
-                _frame_timer.start();
-
                 // prepare ui
                 ruya::ui::new_frame();
                 {
@@ -363,16 +306,10 @@ namespace ruya
 				// RENDER!!!
                 renderer.render_scene(_scene, _vault);
                 ruya::ui::render_frame();
-
-                // update frame => swaps buffers = starts showing newly rendered buffer
                 _window.update();
 
-                // calc FPS
-                log_fps();
-
-                input_system(_scene.registry);
-
                 // game logic
+                input_system(_scene.registry);
                 step();
                 // TODO: separate game state from graphics state and add a sync phase
             }
@@ -412,6 +349,8 @@ namespace ruya
                 poll_snake_direction();
             }
         }
+
+        
 
         /** A single step in the snake game
          * TODO: game over
@@ -569,24 +508,6 @@ namespace ruya
                 // head.elements[0].transform.position.y = pos.y * CELL_SIZE;
             }
             _snek_timer_movement.start();
-        }
-
-
-    
-        void log_fps()
-        {
-            _frame_timer.stop();
-            double frameTime = _frame_timer.elapsed_time_s();
-            double fps = 1 / frameTime;
-            //double fps = frameTime;
-
-            if (_frame_output_timer.elapsed_time_s() > 1.0)
-            {
-                std::cout << fps << " fps"
-                    << "\tElapsed time: " << _frame_output_timer.time_since_creation_s() << "s" 
-                    << "\tmouse pos: ("<< _old_mouse_pos.x <<","<< _old_mouse_pos.y <<")\n";
-                _frame_output_timer.start();
-            }
         }
     };
 }
