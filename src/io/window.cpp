@@ -60,6 +60,11 @@ ruya::io::Window::Window(int width, int height)
     set_cursor_mode(_cursor_mode);
 }
 
+void ruya::io::Window::set_should_close(bool should_close)
+{
+	glfwSetWindowShouldClose(_glfw_window, should_close);
+}
+
 void ruya::io::Window::set_cursor_mode(CursorMode mode)
 {
     _cursor_mode = mode;

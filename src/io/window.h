@@ -36,6 +36,7 @@ namespace ruya
 			bool should_close() { return glfwWindowShouldClose(_glfw_window); }
 
 			// MANIPULATORS
+			void set_should_close(bool should_close);
 			void make_context_current() { glfwMakeContextCurrent(_glfw_window); }
 			void update();
 			void set_cursor_mode(CursorMode mode);
@@ -83,7 +84,8 @@ namespace ruya
 			UP = GLFW_KEY_UP,
 			DOWN = GLFW_KEY_DOWN,
 			LEFT = GLFW_KEY_LEFT,
-			RIGHT = GLFW_KEY_RIGHT
+			RIGHT = GLFW_KEY_RIGHT,
+			ESCAPE = GLFW_KEY_ESCAPE
 		};
 
 		

@@ -199,7 +199,7 @@ namespace ruya
                     },
                     .transform = Transform{
                         .position = vec3{0},
-                        .scale = vec3(1.0f)
+                        .scale = vec3(.9f)
                     }
                 }
             );
@@ -369,12 +369,11 @@ namespace ruya
 
                 // calc FPS
                 log_fps();
-                poll_and_process_events();
+
+                input_system(_scene.registry);
 
                 // game logic
                 step();
-                
-                
                 // TODO: separate game state from graphics state and add a sync phase
             }
             
@@ -391,16 +390,27 @@ namespace ruya
             _snek.push_back(new_part_entity);
 
             // sync snake part coordinate with world position
-            _scene.registry.get<Model>(new_part_entity).elements[0].transform.position = vec3{
-                body_part_loc.x * CELL_SIZE,
-                body_part_loc.y * CELL_SIZE,
-                0
-            };
+            Model & body_model = _scene.registry.get<Model>(new_part_entity);
+            for (auto & elem : body_model.elements)
+            {
+                elem.transform.position = vec3{
+                    body_part_loc.x * CELL_SIZE,
+                    body_part_loc.y * CELL_SIZE,
+                    0
+                };
+            }
         }
 
-        void input_system(entt::registry registry)
+        void input_system(entt::registry& registry)
         {
-            // TODO: check inputs and set state related to the snake input (e.g. direction)
+            if(key_pressed(_window, Key::ESCAPE))
+                _window.set_should_close(true);
+
+            if (!ImGui::GetIO().WantCaptureMouse) 
+            {
+                // scene interaction should come here when the ui doesn't capture the input
+                poll_snake_direction();
+            }
         }
 
         /** A single step in the snake game
@@ -481,70 +491,8 @@ namespace ruya
         }
         
 
-        void poll_and_process_events()
-        {
-            ImGuiIO& imgui_io = ImGui::GetIO();
-            
-            GLFWwindow* glfw_window = _window.get_GLFW_window();
-            
-            if (glfwGetKey(glfw_window, GLFW_KEY_2) == GLFW_PRESS && _allow_shading_mode_change)
-            {
-                if (_renderer != nullptr)
-                {
-                    if (_renderer->shading_mode() == Renderer::ShadingMode::FLAT)
-                        _renderer->set_shading_mode(Renderer::ShadingMode::SMOOTH);
-                    else 
-                        _renderer->set_shading_mode(Renderer::ShadingMode::FLAT);
-                    _allow_shading_mode_change = false;
-                }
-            }
 
-            if (glfwGetKey(glfw_window, GLFW_KEY_2) == GLFW_RELEASE)
-            {
-                _allow_shading_mode_change = true;
-            }
-
-            if (glfwGetKey(glfw_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-                glfwSetWindowShouldClose(glfw_window, true);
-
-
-            // CAMERA CONTROL
-            // update camera interaction when user is not interacting with imgui
-            if (!imgui_io.WantCaptureMouse) 
-            {
-                // update_camera_position();
-                update_camera_look_direction();
-                update_render_mode();
-            }
-        }
-
-        void update_render_mode()
-        {
-            GLFWwindow* glfw_window = _window.get_GLFW_window();
-
-            if (glfwGetKey(glfw_window, GLFW_KEY_1) == GLFW_PRESS && _allow_render_mode_change)
-            {
-                switch (_render_mode)
-                {
-                case RenderMode::FILL:
-                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                    _render_mode = RenderMode::WIREFRAME;
-                    break;
-                case RenderMode::WIREFRAME:
-                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                    _render_mode = RenderMode::FILL;
-                    break;
-                }
-
-                _allow_render_mode_change = false;
-            }
-            else if (glfwGetKey(glfw_window, GLFW_KEY_1) == GLFW_RELEASE)
-            {
-                _allow_render_mode_change = true;
-            }
-        }
-
-        void update_snake_position()
+        void poll_snake_direction()
         {
             auto _pressed = [&window = _window](Key k){
                 return key_pressed(window, k);
@@ -573,7 +521,10 @@ namespace ruya
                 if (_last_dir.x >= 0)
                     _last_dir = {1, 0};
             }
+        }
 
+        void update_snake_position()
+        {
             // movement speed
             _snek_timer_movement.stop();
             float seconds = static_cast<float>(_snek_timer_movement.elapsed_time_s());
@@ -608,115 +559,19 @@ namespace ruya
             for (auto [idx, pos] : std::views::enumerate(_snek_pos))
             {
                 Model& head = _scene.registry.get<Model>(_snek[idx]);
-                head.elements[0].transform.position.x = pos.x * CELL_SIZE;
-                head.elements[0].transform.position.y = pos.y * CELL_SIZE;
+                for (auto &elem : head.elements)
+                {
+                    elem.transform.position.x = pos.x * CELL_SIZE;
+                    elem.transform.position.y = pos.y * CELL_SIZE;
+                    // break;
+                }
+                // head.elements[0].transform.position.x = pos.x * CELL_SIZE;
+                // head.elements[0].transform.position.y = pos.y * CELL_SIZE;
             }
             _snek_timer_movement.start();
         }
 
-        void update_camera_position()
-        {
-            GLFWwindow* glfw_window = _window.get_GLFW_window();
-            
-            // move camera forward/backward/left/right perpendicular with the xz plane
-            // move camera up/down along y-axis
-            float moveSpeed = 6.0f; // units per second
-            float dt = _frame_timer.elapsed_time_s();
 
-            if (glfwGetKey(glfw_window, GLFW_KEY_W) == GLFW_PRESS)
-            {
-                vec3 direction = _camera.cam_front();
-                vec2 moveDirection = glm::normalize(glm::vec2(direction.x, direction.z));
-                vec3 pos = _camera.position();
-                pos.x += moveDirection.x * moveSpeed * dt;
-                pos.z += moveDirection.y * moveSpeed * dt;
-                _camera.set_position(pos);
-            }
-
-            if (glfwGetKey(glfw_window, GLFW_KEY_S) == GLFW_PRESS)
-            {
-                vec3 direction = _camera.cam_front();
-                vec2 moveDirection = glm::normalize(glm::vec2(direction.x, direction.z));
-                vec3 pos = _camera.position();
-                pos.x -= moveDirection.x * moveSpeed * dt;
-                pos.z -= moveDirection.y * moveSpeed * dt;
-                _camera.set_position(pos);
-            }
-
-            if (glfwGetKey(glfw_window, GLFW_KEY_A) == GLFW_PRESS)
-            {
-                vec3 direction = _camera.cam_front();
-                vec2 moveDirection = glm::normalize(glm::vec2(direction.x, direction.z));
-                moveDirection = vec2(moveDirection.y, -moveDirection.x); // turn clockwise 90deg from forward direction
-                vec3 pos = _camera.position();
-                pos.x += moveDirection.x * moveSpeed * dt;
-                pos.z += moveDirection.y * moveSpeed * dt;
-                _camera.set_position(pos);
-            }
-
-            if (glfwGetKey(glfw_window, GLFW_KEY_D) == GLFW_PRESS)
-            {
-                vec3 direction = _camera.cam_front();
-                vec2 moveDirection = glm::normalize(glm::vec2(direction.x, direction.z));
-                moveDirection = vec2(-moveDirection.y, moveDirection.x); // turn clockwise 90deg from forward direction
-                vec3 pos = _camera.position();
-                pos.x += moveDirection.x * moveSpeed * dt;
-                pos.z += moveDirection.y * moveSpeed * dt;
-                _camera.set_position(pos);
-            }
-
-            if (glfwGetKey(glfw_window, GLFW_KEY_SPACE) == GLFW_PRESS)
-            {
-                vec3 pos = _camera.position();
-                pos.y += moveSpeed * _frame_timer.elapsed_time_s();
-                _camera.set_position(pos);
-            }
-
-            if (glfwGetKey(glfw_window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-            {
-                vec3 pos = _camera.position();
-                pos.y -= moveSpeed * _frame_timer.elapsed_time_s();
-                _camera.set_position(pos);
-            }
-        }
-
-        void update_camera_look_direction()
-        {
-            // get new pos
-            dvec2 pos;
-            glfwGetCursorPos(_window.get_GLFW_window(), &(pos.x), &(pos.y));
-
-            // look around when mouse is pressed
-            GLFWwindow* glfw_window = _window.get_GLFW_window();
-            if (glfwGetMouseButton(glfw_window, GLFW_MOUSE_BUTTON_1) == GLFW_RELEASE)
-            {
-                _window.set_cursor_mode(Window::CursorMode::NORMAL);
-                _old_mouse_pos = pos; // so that the view doesn't jump when pressing the button to rotate camera
-                return;
-            }
-            if (glfwGetMouseButton(glfw_window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
-            {
-                _window.set_cursor_mode(Window::CursorMode::DISABLED);
-            }
-
-
-            // init mouse pos if this is the first time
-            if (-1 <= _old_mouse_pos.x && _old_mouse_pos.x <= -0.95
-                && -1 <= _old_mouse_pos.y && _old_mouse_pos.y <= -0.95)
-            {
-                _old_mouse_pos = pos;
-            }
-
-            // movement difference
-            dvec2 deltaPos = pos - _old_mouse_pos;
-            //deltaPos.y *= -1; // mouse y is negative upwards, flip y-axis
-
-            // turn camera
-            double turnSpeed = 0.0005;
-            _camera.update_angle(deltaPos.x * turnSpeed, deltaPos.y * turnSpeed);
-
-            _old_mouse_pos = pos;
-        }
     
         void log_fps()
         {
